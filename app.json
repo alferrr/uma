@@ -20,6 +20,16 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-font",
+      "expo-sqlite",
+      "expo-router"
+    ],
+    "scheme": "uma",
+    "experiments": {
+      "typedRoutes": true
+    },
+    "backgroundColor": "#F4F4F1"
   }
 }
