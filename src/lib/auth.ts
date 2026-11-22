@@ -10,6 +10,21 @@ export type User = { id?: string; name: string; contact: string; role: Role };
 
 let current: User | null = null;
 
+// With no backend (offline prototype), remember the signed-in user on the phone.
+const MOCK_KEY = 'uma.mockUser';
+function rememberMock(u: User | null) {
+  if (u) localStorage.setItem(MOCK_KEY, JSON.stringify(u));
+  else localStorage.removeItem(MOCK_KEY);
+}
+function recallMock(): User | null {
+  try {
+    const raw = localStorage.getItem(MOCK_KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Supabase takes an email or a phone number as separate fields. */
@@ -57,7 +72,10 @@ async function withProfile(u: SupabaseUser, fallbackContact: string): Promise<Us
 
 /** Bring back the signed-in user after the app restarts (the session is kept on the phone). */
 export async function restoreSession(): Promise<User | null> {
-  if (!supabase) return current;
+  if (!supabase) {
+    current = current ?? recallMock();
+    return current;
+  }
   const { data } = await supabase.auth.getSession();
   if (!data.session) return null;
   current = await withProfile(data.session.user, '');
@@ -104,6 +122,7 @@ export async function signIn(contact: string, password: string): Promise<User> {
   if (!supabase) {
     await wait(600);
     current = current?.contact === contact ? current : { name: 'Owner', contact, role: 'owner' };
+    rememberMock(current);
     return current;
   }
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -119,6 +138,7 @@ export async function signUp(user: User, password: string): Promise<User> {
   if (!supabase) {
     await wait(600);
     current = user;
+    rememberMock(current);
     return current;
   }
   const { data, error } = await supabase.auth.signUp({
@@ -137,6 +157,7 @@ export function getUser() {
 
 export async function signOut() {
   current = null;
+  rememberMock(null);
   clearServerCopies();
   await supabase?.auth.signOut();
 }
