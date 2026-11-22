@@ -2,7 +2,7 @@
  * Auth for Uma. Uses Supabase when `.env.local` is configured, otherwise the
  * in-memory mock from the class prototype (product.md §4).
  */
-import { clearFarmsAndZones } from './db';
+import { clearServerCopies } from './db';
 import { supabase } from './supabase';
 
 export type Role = 'owner' | 'worker';
@@ -115,7 +115,7 @@ export function getUser() {
 
 export async function signOut() {
   current = null;
-  clearFarmsAndZones();
+  clearServerCopies();
   await supabase?.auth.signOut();
 }
 

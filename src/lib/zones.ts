@@ -7,11 +7,14 @@ export type Zone = {
   code: string;
   area: string;
   row: string;
+  plant: string | null;
   status: Status;
   deadCount: number;
   moisture: Moisture | null;
   /** ISO time of the last check, or null if never checked. */
   lastCheckedAt: string | null;
+  /** Name of whoever checked last, when known. */
+  lastCheckedBy: string | null;
 };
 
 /** Sensor readings arrive over Bluetooth later; nothing is seeded. */
