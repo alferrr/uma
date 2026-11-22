@@ -36,17 +36,22 @@ assets from the reference are used.
 - **Emphasis**: depth of field (one element sharp, the rest soft), a cursor tap, a soft glow.
 - **Transitions**: push-in with blur, a sweeping brand stroke, a pill morphing into an icon.
 
-## How the Uma ad applies it
+## How the Uma ad applies it (v2, matched frame-by-frame at 10 fps)
 
-- Same beat structure, stretched to about 43 s so each 3–5 word line is on screen long enough
-  to read twice: question → "Meet Uma" → phone rises with side labels → UI close-ups with a
-  highlight → morph into the end card.
-- Clean white `#FFFFFF` background with at most soft `#F4F4F1` panels. No dark scenes, no
-  full-screen colour washes, so the reference's green wash and swoosh become a white scene with
-  a thin green progress stroke and the push-in.
-- Uma's tokens: Outfit (light and bold mixed), green `#16923F`, orange `#F7931E` only for the
-  highlight ring and active state, text `#141414`, muted `#6E6E6A`.
-- Easing: ease-out cubic for entrances, ease-in cubic for exits, critically damped springs,
-  6–12 frame staggers. Calm, no bounce.
-- Highlights are an orange ring and a count-up drawn **on top of** real screenshots. The app's
-  UI is never redrawn.
+- **Kinetic type** (`WordPop`): each word grows from tiny to about 130% size in green, raised a
+  little, then settles to size in near-black over about 13 frames, 4 frames apart. Font size
+  animates (not a transform), so the line re-centres live as words arrive, exactly like the
+  reference. Exit: words in order turn light grey, shrink and drift up-left.
+- **"Meet [logo] Uma"**: letters type in one by one (green→black, grey→green), the sprout mark's
+  ring draws itself from the bottom, then a slow push-in and a whip-pan left with directional trails.
+- **Phone rises** from below into a green glow, with a short label either side (stacked above in 9:16).
+- **One morphing screen** (`Screen`): a single element whose frame and crop interpolate between
+  poses: phone → zoomed card → small card on the swoosh → card → phone. Screenshot changes
+  crossfade inside it, so screens morph rather than cut.
+- **Swoosh**: a thick green stroke sweeps across while the card rides it and turns into the next screen.
+- **Focus-pull list**: zone pills cropped from the real map rise in, the others blur, a pointer
+  taps one, and that pill grows into the full map.
+- **CTA**: green panel, pill collapses into its arrow, the arrow circle grows into white.
+- **End**: a dot draws into the logo ring, "Uma" types in, then the tagline and a PROTOTYPE tag.
+- Mint wash only behind the type scenes, like the reference; the rest is white. Uma tokens:
+  Outfit, green `#16923F`, orange `#F7931E` for the highlight ring and count-up only.
