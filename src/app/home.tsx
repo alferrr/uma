@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CropTile, SunsetField } from '@/components/art';
 import { ChevronRight, DropIcon, PlusIcon, SearchIcon, SproutIcon } from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { SunsetPanel } from '@/components/SunsetPanel';
 import { WeatherCard } from '@/components/WeatherCard';
 import { ZoneCard } from '@/components/ZoneCard';
 import { getUser, signOut } from '@/lib/auth';
@@ -155,48 +156,28 @@ export default function Home() {
           </View>
         </View>
 
-        <WeatherCard />
+        <WeatherCard date={today} />
 
         {/* Moisture card: only when a sensor has reported */}
         {reading && level && (
-          <View style={styles.moistureCard}>
-            <SunsetField style={StyleSheet.absoluteFill} />
-            <View style={styles.moistureShade} />
-            <View style={styles.moistureBody}>
-              <View style={styles.hours} accessibilityRole="tablist">
-                {READINGS.map((r, i) => {
-                  const on = i === hour;
-                  return (
-                    <Pressable
-                      key={r.hour}
-                      onPress={() => setHour(i)}
-                      accessibilityRole="tab"
-                      accessibilityState={{ selected: on }}
-                      accessibilityLabel={`${r.hour}:00, ${r.percent}%`}
-                      style={[styles.hourPill, on && styles.hourPillOn]}
-                    >
-                      <Text style={styles.hourText}>{r.hour}</Text>
-                      <DropIcon size={18} color={colors.white} />
-                      <Text style={styles.hourPct}>{r.percent}%</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              <Text style={styles.cardDate}>{today}</Text>
-              <View style={styles.readingRow}>
-                <Text style={styles.bigPct}>{reading.percent}%</Text>
-                <View style={styles.levelRow}>
-                  <DropIcon size={16} color="#F3D27A" />
-                  <Text style={styles.levelText}>{t.moistureLabel[level]}</Text>
-                </View>
-              </View>
-              <View style={styles.cardFooter}>
-                <View style={styles.levelRow}>
-                  <SproutIcon size={16} color={colors.white} />
-                  <Text style={styles.footerText}>{t.soilMoisture} · POT-01</Text>
-                </View>
-              </View>
-            </View>
+          <View style={styles.moistureWrap}>
+            <SunsetPanel
+              items={READINGS.map((r) => ({
+                key: r.hour,
+                hour: r.hour,
+                icon: <DropIcon size={20} color={colors.white} />,
+                value: `${r.percent}%`,
+                label: `${r.hour}:00, ${r.percent}%`,
+              }))}
+              selected={Math.min(hour, READINGS.length - 1)}
+              onSelect={setHour}
+              date={today}
+              big={`${reading.percent}%`}
+              statusIcon={<DropIcon size={16} color="#F3D27A" />}
+              statusText={t.moistureLabel[level]}
+              footerIcon={<SproutIcon size={16} color={colors.white} />}
+              footerText={`${t.soilMoisture} · POT-01`}
+            />
           </View>
         )}
 
@@ -323,52 +304,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: colors.white,
   },
-  moistureCard: {
-    marginTop: 16,
-    marginHorizontal: 18,
-    borderRadius: 32,
-    overflow: 'hidden',
-  },
-  moistureBody: { padding: 18 },
-  moistureShade: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: 'rgba(40,28,10,0.55)',
-  },
-  hours: { flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
-  hourPill: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-  hourPillOn: { backgroundColor: colors.orange, borderColor: colors.orange },
-  hourText: { fontFamily: fonts.regular, fontSize: 14, color: colors.white },
-  hourPct: { fontFamily: fonts.semibold, fontSize: 16, color: colors.white },
-  cardDate: {
-    marginTop: 18,
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.85)',
-  },
-  readingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  bigPct: { fontFamily: fonts.semibold, fontSize: 44, color: colors.white },
-  levelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  levelText: { fontFamily: fonts.regular, fontSize: 15, color: colors.white },
-  cardFooter: {
-    marginTop: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  footerText: { fontFamily: fonts.regular, fontSize: 14, color: colors.white },
+  moistureWrap: { marginTop: 16 },
   filters: { gap: 12, paddingHorizontal: 18, paddingVertical: 22 },
   chip: {
     flexDirection: 'row',
