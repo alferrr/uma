@@ -4,7 +4,14 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GreenStripes } from '@/components/art';
 import { AuthLayout } from '@/components/AuthLayout';
-import { CheckIcon, ChevronLeft, PinIcon, TrashIcon } from '@/components/icons';
+import {
+  CheckIcon,
+  ChevronLeft,
+  PencilIcon,
+  PinIcon,
+  TrashIcon,
+  UsersIcon,
+} from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { getUser } from '@/lib/auth';
 import { setCurrentFarm, useCurrentFarm, useFarms, useZoneCounts, type FarmRow } from '@/lib/db';
@@ -91,13 +98,33 @@ export default function Farms() {
                   </View>
                   {on && <CheckIcon size={20} color={colors.green} strokeWidth={2.4} />}
                 </Pressable>
+                <Pressable
+                  onPress={() => router.push(`/members/${f.id}`)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${t.members}: ${f.name}`}
+                  hitSlop={6}
+                  style={({ pressed }) => [styles.action, pressed && { opacity: 0.6 }]}
+                >
+                  <UsersIcon size={20} color={colors.green} />
+                </Pressable>
+                {canManageFarm(f) && (
+                  <Pressable
+                    onPress={() => router.push(`/add-farm?id=${f.id}`)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t.renameFarm}: ${f.name}`}
+                    hitSlop={6}
+                    style={({ pressed }) => [styles.action, pressed && { opacity: 0.6 }]}
+                  >
+                    <PencilIcon size={20} color={colors.text} />
+                  </Pressable>
+                )}
                 {canManageFarm(f) && (
                   <Pressable
                     onPress={() => confirmDelete(f)}
                     accessibilityRole="button"
                     accessibilityLabel={`${t.deleteFarm}: ${f.name}`}
                     hitSlop={8}
-                    style={({ pressed }) => [styles.trash, pressed && { opacity: 0.6 }]}
+                    style={({ pressed }) => [styles.action, pressed && { opacity: 0.6 }]}
                   >
                     <TrashIcon size={20} color={colors.danger} />
                   </Pressable>
@@ -113,6 +140,14 @@ export default function Farms() {
           <PrimaryButton label={t.addFarm} onPress={() => router.push('/add-farm')} />
         </View>
       )}
+      <Pressable
+        onPress={() => router.push('/join-farm')}
+        accessibilityRole="button"
+        style={({ pressed }) => [styles.join, pressed && { opacity: 0.7 }]}
+      >
+        <UsersIcon size={20} color={colors.green} />
+        <Text style={styles.joinText}>{t.joinFarm}</Text>
+      </Pressable>
     </AuthLayout>
   );
 }
@@ -152,9 +187,21 @@ const styles = StyleSheet.create({
   badgeOn: { backgroundColor: colors.green },
   name: { fontFamily: fonts.medium, fontSize: 18, color: colors.text },
   sub: { fontFamily: fonts.regular, fontSize: 14, color: colors.muted },
-  trash: { padding: 18 },
+  action: { paddingVertical: 16, paddingHorizontal: 10 },
   emptyBox: { alignItems: 'center', gap: 6, paddingVertical: 24 },
   empty: { fontFamily: fonts.medium, fontSize: 18, color: colors.text },
   hint: { fontFamily: fonts.regular, fontSize: 14, color: colors.muted, textAlign: 'center' },
   cta: { marginTop: 22 },
+  join: {
+    marginTop: 12,
+    height: 58,
+    borderRadius: 29,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: colors.green,
+  },
+  joinText: { fontFamily: fonts.medium, fontSize: 17, color: colors.green },
 });
