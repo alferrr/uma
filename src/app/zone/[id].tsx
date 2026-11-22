@@ -1,14 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CropTile, GreenStripes, ZoneAerial } from '@/components/art';
-import { ChevronLeft, DropIcon } from '@/components/icons';
+import { ChevronLeft, DropIcon, TrashIcon } from '@/components/icons';
 import { IconButton } from '@/components/IconButton';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { StatusIcon } from '@/components/status';
-import { useZone } from '@/lib/db';
+import { useCurrentFarm, useZone } from '@/lib/db';
+import { canManageFarm, removeZone } from '@/lib/farms';
 import { useT } from '@/lib/i18n';
 import { toneFor } from '@/lib/zones';
 import { colors, fonts, statusColors } from '@/theme';
@@ -17,6 +18,8 @@ import { colors, fonts, statusColors } from '@/theme';
 export default function ZoneDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const zone = useZone(id);
+  const farm = useCurrentFarm();
+  const canDelete = canManageFarm(farm);
   const insets = useSafeAreaInsets();
   const t = useT();
 
@@ -27,6 +30,22 @@ export default function ZoneDetails() {
         <PrimaryButton label={t.backNow} onPress={() => router.back()} />
       </View>
     );
+  }
+
+  function confirmDelete() {
+    if (!zone) return;
+    Alert.alert(t.deleteZoneTitle(zone.code), t.deleteZoneBody, [
+      { text: t.cancel, style: 'cancel' },
+      {
+        text: t.deleteWord,
+        style: 'destructive',
+        onPress: async () => {
+          const error = await removeZone(zone.id);
+          if (error) Alert.alert(error === 'forbidden' ? t.ownersOnly : t.deleteFailed);
+          else router.back();
+        },
+      },
+    ]);
   }
 
   const last = zone.lastCheckedAt
@@ -93,6 +112,17 @@ export default function ZoneDetails() {
             <PrimaryButton label={t.checkIn} onPress={() => router.push(`/check-in/${zone.id}`)} />
           </View>
         </View>
+        {canDelete && (
+          <Pressable
+            onPress={confirmDelete}
+            accessibilityRole="button"
+            accessibilityLabel={`${t.deleteZone}: ${zone.code}`}
+            style={({ pressed }) => [styles.delete, pressed && { opacity: 0.6 }]}
+          >
+            <TrashIcon size={18} color={colors.danger} />
+            <Text style={styles.deleteText}>{t.deleteZone}</Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -177,6 +207,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.3)',
   },
   badgeText: { fontFamily: fonts.regular, fontSize: 15, color: colors.white },
+  delete: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 44,
+  },
+  deleteText: { fontFamily: fonts.medium, fontSize: 15, color: colors.danger },
   missing: { flex: 1, padding: 24, gap: 20, backgroundColor: colors.bg },
   missingText: { fontFamily: fonts.regular, fontSize: 17, color: colors.text },
 });

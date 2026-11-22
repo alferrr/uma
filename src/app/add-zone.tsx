@@ -9,7 +9,7 @@ import { ChevronLeft } from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { TextField, type TextFieldHandle } from '@/components/TextField';
 import { getUser } from '@/lib/auth';
-import { newId, upsertZone } from '@/lib/db';
+import { newId, upsertZone, useCurrentFarm } from '@/lib/db';
 import { useT } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { syncNow } from '@/lib/sync';
@@ -30,9 +30,14 @@ export default function AddZone() {
   const rowRef = useRef<TextFieldHandle>(null);
   const plantRef = useRef<TextFieldHandle>(null);
 
+  const farm = useCurrentFarm();
   const isOwner = getUser()?.role === 'owner';
 
   async function submit() {
+    if (!farm) {
+      setErrors({ form: t.addFarmFirst });
+      return;
+    }
     const clean = code.trim().toUpperCase();
     if (!clean) {
       setErrors({ code: t.codeRequired });
@@ -42,6 +47,7 @@ export default function AddZone() {
     setLoading(true);
     try {
       const fields = {
+        farm_id: farm.id,
         code: clean,
         area: area.trim(),
         row_label: row.trim(),
@@ -51,7 +57,7 @@ export default function AddZone() {
         const { data, error } = await supabase
           .from('zones')
           .insert(fields)
-          .select('id, code, area, row_label')
+          .select('id, farm_id, code, area, row_label')
           .single();
         if (error) {
           // 23505 = unique code already used; 42501 = row-level security refused it.
@@ -63,7 +69,13 @@ export default function AddZone() {
         upsertZone(data);
         syncNow();
       } else {
-        upsertZone({ id: newId(), code: clean, area: fields.area, row_label: fields.row_label });
+        upsertZone({
+          id: newId(),
+          farm_id: farm.id,
+          code: clean,
+          area: fields.area,
+          row_label: fields.row_label,
+        });
       }
       router.back();
     } catch {
@@ -143,7 +155,12 @@ export default function AddZone() {
         </Text>
       )}
       <View style={styles.cta}>
-        <PrimaryButton label={t.saveZone} onPress={submit} loading={loading} disabled={!isOwner} />
+        <PrimaryButton
+          label={t.saveZone}
+          onPress={submit}
+          loading={loading}
+          disabled={!isOwner || !farm}
+        />
       </View>
     </AuthLayout>
   );

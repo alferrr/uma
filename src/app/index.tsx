@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,11 +7,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FieldRows, GreenStripes } from '@/components/art';
 import { LeafLogo } from '@/components/icons';
 import { SlideButton } from '@/components/SlideButton';
+import { restoreSession } from '@/lib/auth';
+import { afterSignInRoute } from '@/lib/i18n';
 import { colors, fonts } from '@/theme';
 
 /** Screen 1 · Welcome */
 export default function Welcome() {
   const insets = useSafeAreaInsets();
+
+  // Already signed in (the session is kept on the phone): skip straight in.
+  useEffect(() => {
+    restoreSession()
+      .then((u) => u && router.replace(afterSignInRoute()))
+      .catch(() => {});
+  }, []);
 
   return (
     <View style={styles.root}>

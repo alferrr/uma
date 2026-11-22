@@ -7,7 +7,7 @@ import { CropTile, GreenStripes, SunsetField } from '@/components/art';
 import { ArrowUpRight, ChevronLeft } from '@/components/icons';
 import { IconButton } from '@/components/IconButton';
 import { StatusTag } from '@/components/status';
-import { useZones } from '@/lib/db';
+import { useCurrentFarm, useZones } from '@/lib/db';
 import { useT } from '@/lib/i18n';
 import { byAttention, needsVisit, toneFor, type Status } from '@/lib/zones';
 import { colors, fonts, statusColors } from '@/theme';
@@ -20,6 +20,7 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const t = useT();
   const zones = useZones();
+  const farm = useCurrentFarm();
 
   const visit = zones.filter(needsVisit).sort(byAttention);
   const counts = COUNT_ORDER.map((s) => ({ s, n: zones.filter((z) => z.status === s).length }));
@@ -66,7 +67,8 @@ export default function MapScreen() {
             <GreenStripes />
           </View>
           <View>
-            <Text style={styles.farmName}>{t.farmName}</Text>
+            <Text style={styles.farmName}>{farm?.name ?? t.farmsTitle}</Text>
+            <Text style={styles.farmSub}>{t.zoneCount(zones.length)}</Text>
           </View>
         </View>
       </View>

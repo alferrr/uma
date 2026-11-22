@@ -2,7 +2,6 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,13 +13,22 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CropTile, SunsetField } from '@/components/art';
-import { ChevronRight, DropIcon, PlusIcon, SearchIcon, SproutIcon } from '@/components/icons';
+import {
+  ChevronDown,
+  ChevronRight,
+  DropIcon,
+  PinIcon,
+  PlusIcon,
+  SearchIcon,
+  SproutIcon,
+} from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { SunsetPanel } from '@/components/SunsetPanel';
 import { WeatherCard } from '@/components/WeatherCard';
 import { ZoneCard } from '@/components/ZoneCard';
-import { getUser, signOut } from '@/lib/auth';
-import { useZones } from '@/lib/db';
+import { getUser } from '@/lib/auth';
+import { useCurrentFarm, useZones } from '@/lib/db';
+import { canManageFarm } from '@/lib/farms';
 import { useLanguage, useT } from '@/lib/i18n';
 import { syncNow } from '@/lib/sync';
 import { refreshWeather } from '@/lib/weather';
@@ -47,8 +55,10 @@ export default function Home() {
   const t = useT();
   const lang = useLanguage() ?? 'en';
   const zones = useZones();
+  const farm = useCurrentFarm();
   const user = getUser();
   const isOwner = user?.role === 'owner';
+  const canAddZone = canManageFarm(farm);
   const name = user?.name ?? 'Owner';
 
   const [query, setQuery] = useState('');
@@ -88,21 +98,6 @@ export default function Home() {
       .sort(byAttention);
   }, [zones, filter, query]);
 
-  function accountMenu() {
-    Alert.alert(name, user?.contact, [
-      { text: t.changeLanguage, onPress: () => router.push('/language') },
-      {
-        text: t.signOut,
-        style: 'destructive',
-        onPress: async () => {
-          await signOut();
-          router.replace('/');
-        },
-      },
-      { text: t.cancel, style: 'cancel' },
-    ]);
-  }
-
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -124,7 +119,7 @@ export default function Home() {
                 <Text style={styles.date}>{today}</Text>
               </View>
               <Pressable
-                onPress={accountMenu}
+                onPress={() => router.push('/profile')}
                 accessibilityRole="button"
                 accessibilityLabel={t.account}
                 style={({ pressed }) => [styles.avatar, pressed && { opacity: 0.75 }]}
@@ -209,12 +204,27 @@ export default function Home() {
         </ScrollView>
 
         {/* Zones */}
+        {farm && (
+          <Pressable
+            onPress={() => router.push('/farms')}
+            accessibilityRole="button"
+            accessibilityLabel={`${t.farmsTitle}: ${farm.name}`}
+            style={({ pressed }) => [styles.farmPill, pressed && { opacity: 0.8 }]}
+          >
+            <PinIcon size={18} color={colors.green} />
+            <Text style={styles.farmPillText} numberOfLines={1}>
+              {farm.name}
+            </Text>
+            <ChevronDown size={16} color={colors.muted} />
+          </Pressable>
+        )}
+
         <View style={styles.sectionHead}>
           <Text style={styles.section} accessibilityRole="header">
             {t.myZones}
           </Text>
           <View style={styles.headActions}>
-            {isOwner && (
+            {canAddZone && (
               <Pressable
                 onPress={() => router.push('/add-zone')}
                 accessibilityRole="button"
@@ -240,8 +250,16 @@ export default function Home() {
         <View style={styles.cards}>
           {shown.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Text style={styles.empty}>{zones.length === 0 ? t.noZonesYet : t.noZones}</Text>
-              {zones.length === 0 && isOwner && (
+              <Text style={styles.empty}>
+                {!farm ? t.noFarmsYet : zones.length === 0 ? t.noZonesYet : t.noZones}
+              </Text>
+              {!farm && isOwner && (
+                <>
+                  <Text style={styles.emptyHint}>{t.noFarmsHint}</Text>
+                  <PrimaryButton label={t.addFarm} onPress={() => router.push('/add-farm')} />
+                </>
+              )}
+              {!!farm && zones.length === 0 && canAddZone && (
                 <>
                   <Text style={styles.emptyHint}>{t.noZonesHint}</Text>
                   <PrimaryButton label={t.addZone} onPress={() => router.push('/add-zone')} />
@@ -339,6 +357,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green,
   },
   addZoneText: { fontFamily: fonts.medium, fontSize: 14, color: colors.white },
+  farmPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 8,
+    marginLeft: 24,
+    marginBottom: 14,
+    height: 40,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    maxWidth: '80%',
+  },
+  farmPillText: { flexShrink: 1, fontFamily: fonts.medium, fontSize: 15, color: colors.text },
   emptyBox: { gap: 12, alignItems: 'stretch', paddingVertical: 10 },
   emptyHint: { textAlign: 'center', fontFamily: fonts.regular, fontSize: 14, color: colors.muted },
   seeAll: { flexDirection: 'row', alignItems: 'center', gap: 4 },
