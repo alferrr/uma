@@ -12,6 +12,7 @@ const LON = 123.8854;
 const URL =
   `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
   '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day' +
+  '&hourly=temperature_2m,weather_code,is_day&forecast_hours=6' +
   '&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min' +
   '&timezone=Asia%2FManila&forecast_days=1';
 
@@ -19,6 +20,8 @@ const CACHE_KEY = 'uma.weather';
 const FRESH_MS = 15 * 60_000;
 
 export type Condition = 'clear' | 'partly' | 'cloudy' | 'fog' | 'drizzle' | 'rain' | 'storm';
+
+export type HourWeather = { hour: string; tempC: number; condition: Condition; isDay: boolean };
 
 export type Weather = {
   tempC: number;
@@ -29,6 +32,8 @@ export type Weather = {
   rainChance: number;
   highC: number;
   lowC: number;
+  /** The current hour and the next five, for the strip on Home. */
+  hours: HourWeather[];
   /** ISO time this reading was fetched. */
   fetchedAt: string;
 };
@@ -53,6 +58,12 @@ type Forecast = {
     wind_speed_10m: number;
     is_day: number;
   };
+  hourly: {
+    time: string[];
+    temperature_2m: number[];
+    weather_code: number[];
+    is_day: number[];
+  };
   daily: {
     precipitation_probability_max: (number | null)[];
     temperature_2m_max: number[];
@@ -73,6 +84,12 @@ async function fetchWeather(): Promise<Weather> {
     rainChance: j.daily.precipitation_probability_max[0] ?? 0,
     highC: j.daily.temperature_2m_max[0]!,
     lowC: j.daily.temperature_2m_min[0]!,
+    hours: j.hourly.time.map((t, i) => ({
+      hour: t.slice(11, 13),
+      tempC: j.hourly.temperature_2m[i]!,
+      condition: conditionFromCode(j.hourly.weather_code[i]!),
+      isDay: j.hourly.is_day[i] === 1,
+    })),
     fetchedAt: new Date().toISOString(),
   };
 }
@@ -80,7 +97,8 @@ async function fetchWeather(): Promise<Weather> {
 function readCache(): Weather | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? (JSON.parse(raw) as Weather) : null;
+    const w = raw ? (JSON.parse(raw) as Weather) : null;
+    return w && Array.isArray(w.hours) ? w : null;
   } catch {
     return null;
   }
@@ -137,12 +155,4 @@ export function useWeather() {
     if (!isFresh(state.weather)) refreshWeather();
   }, []);
   return { ...s, refresh: refreshWeather };
-}
-
-/** What the weather means for watering today. */
-export type Advice = 'rain' | 'hot' | 'good';
-export function adviceFor(w: Weather): Advice {
-  if (w.rainChance >= 60) return 'rain';
-  if (w.highC >= 33) return 'hot';
-  return 'good';
 }
