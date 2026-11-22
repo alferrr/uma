@@ -55,7 +55,8 @@ export default function CheckIn() {
     if (!zone || !status || !moisture) return;
     const row = addCheckIn({
       zone_id: zone.id,
-      worker_id: getUser()?.contact ?? null,
+      worker_id: getUser()?.id ?? null,
+      worker_name: getUser()?.name ?? null,
       status,
       dead_count: status === 'dead' ? dead : 0,
       moisture,

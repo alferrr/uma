@@ -1,42 +1,105 @@
 /**
  * Sync with Supabase (product.md §11). The phone writes locally first; this
- * downloads farms and zones and uploads saved check-ins whenever there is a session and
- * a connection. Failures are silent: the data stays on the phone and the next
- * attempt retries.
+ * uploads saved check-ins, then downloads farms, zones, members, names and
+ * recent check-ins (everyone's, so the owner sees the workers' checks). Each
+ * part is independent, so one failure does not stop the rest. Nothing is lost
+ * on failure: unsent check-ins stay on the phone and the next attempt retries.
  */
 import {
   discardCheckIn,
   markSynced,
+  mergeServerCheckIns,
   pendingCheckIns,
   replaceFarmsAndZones,
+  replaceMembers,
   type CheckIn,
   type FarmRow,
   type ZoneRow,
 } from './db';
 import { supabase } from './supabase';
 
-let running: Promise<void> | null = null;
+/** How many recent check-ins to download for history and status. */
+const RECENT = 300;
 
-async function run() {
-  if (!supabase) return;
+let running: Promise<boolean> | null = null;
+
+async function run(): Promise<boolean> {
+  if (!supabase) return true;
   const { data } = await supabase.auth.getSession();
-  if (!data.session) return;
+  if (!data.session) return true;
+  let ok = true;
 
   // Upload first so a slow download never holds back a check-in.
   const pending = pendingCheckIns();
   if (pending.length > 0) {
     const { error } = await upload(pending);
     if (!error) markSynced(pending.map((c) => c.id));
-    else await uploadOneByOne(pending);
+    else ok = (await uploadOneByOne(pending)) && ok;
   }
 
-  const [farms, zones] = await Promise.all([
-    supabase.from('farms').select('id, name, owner_id').order('name'),
-    supabase.from('zones').select('id, farm_id, code, area, row_label').order('code'),
-  ]);
-  if (!farms.error && !zones.error && farms.data && zones.data) {
-    replaceFarmsAndZones(farms.data as FarmRow[], zones.data as ZoneRow[]);
+  // Names of everyone on your farms (row-level security limits this to them).
+  const people = await supabase.from('profiles').select('id, name');
+  const names = new Map<string, string>(
+    (people.data ?? []).map((p: { id: string; name: string }) => [p.id, p.name]),
+  );
+  if (people.error) ok = false;
+
+  const [farms, zones] = await Promise.all([fetchFarms(), fetchZones()]);
+  if (farms && zones) {
+    replaceFarmsAndZones(
+      farms.map((f) => ({ ...f, owner_name: (f.owner_id && names.get(f.owner_id)) || null })),
+      zones,
+    );
+  } else {
+    ok = false;
   }
+
+  const members = await supabase.from('farm_members').select('farm_id, user_id');
+  if (!members.error && members.data) {
+    replaceMembers(
+      members.data.map((m: { farm_id: string; user_id: string }) => ({
+        ...m,
+        name: names.get(m.user_id) ?? '',
+      })),
+    );
+  }
+
+  const recent = await supabase
+    .from('check_ins')
+    .select('id, zone_id, worker_id, status, dead_count, moisture, source, checked_at, synced_at')
+    .order('checked_at', { ascending: false })
+    .limit(RECENT);
+  if (!recent.error && recent.data) {
+    mergeServerCheckIns(
+      (recent.data as Omit<CheckIn, 'worker_name'>[]).map((c) => ({
+        ...c,
+        worker_name: (c.worker_id && names.get(c.worker_id)) || null,
+      })),
+    );
+  } else {
+    ok = false;
+  }
+
+  return ok;
+}
+
+/** Farms with invite codes; falls back to the older shape until the members migration runs. */
+async function fetchFarms(): Promise<Omit<FarmRow, 'owner_name'>[] | null> {
+  const full = await supabase!
+    .from('farms')
+    .select('id, name, owner_id, invite_code')
+    .order('name');
+  if (!full.error) return full.data;
+  const basic = await supabase!.from('farms').select('id, name, owner_id').order('name');
+  return basic.error ? null : basic.data.map((f) => ({ ...f, invite_code: null }));
+}
+
+async function fetchZones(): Promise<ZoneRow[] | null> {
+  const { data, error } = await supabase!
+    .from('zones')
+    .select('id, farm_id, code, area, row_label, plant')
+    .order('code');
+  return error ? null : (data as ZoneRow[]);
 }
 
 // Same record ID twice never creates a duplicate; worker_id is set by the server.
@@ -57,17 +120,21 @@ function upload(rows: CheckIn[]) {
 
 /** One bad record must not block the rest. A check-in for a zone that was deleted is dropped. */
 async function uploadOneByOne(rows: CheckIn[]) {
+  let ok = true;
   for (const c of rows) {
     const { error } = await upload([c]);
     if (!error) markSynced([c.id]);
-    else if (error.code === '23503') discardCheckIn(c.id); // zone no longer exists
+    else if (error.code === '23503')
+      discardCheckIn(c.id); // zone no longer exists
+    else ok = false;
   }
+  return ok;
 }
 
-/** Run one sync at a time; callers during a run share it. */
+/** Run one sync at a time; callers during a run share it. Resolves true if everything worked. */
 export function syncNow() {
   running ??= run()
-    .catch(() => {})
+    .catch(() => false)
     .finally(() => {
       running = null;
     });
