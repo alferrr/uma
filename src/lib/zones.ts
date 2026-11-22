@@ -1,7 +1,4 @@
-/**
- * Zones on the farm. Only POT-01 is real (product.md §4); everything else is
- * labeled sample data so the map and lists have something to show.
- */
+/** Zone and status types, plus helpers for ranking zones that need a visit. */
 export type Status = 'ok' | 'needs_water' | 'dead' | 'not_checked';
 export type Moisture = 'wet' | 'ok' | 'dry';
 
@@ -16,9 +13,6 @@ export type Zone = {
   /** ISO time of the last check, or null if never checked. */
   lastCheckedAt: string | null;
 };
-
-/** Zones come from the database once sync exists; nothing is seeded. */
-export const ZONES: Zone[] = [];
 
 /** Sensor readings arrive over Bluetooth later; nothing is seeded. */
 export type Reading = { hour: string; percent: number };

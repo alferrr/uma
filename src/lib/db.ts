@@ -5,7 +5,7 @@
 import { openDatabaseSync } from 'expo-sqlite';
 import { useSyncExternalStore } from 'react';
 
-import { ZONES, type Moisture, type Status, type Zone } from './zones';
+import type { Moisture, Status, Zone } from './zones';
 
 export type CheckInStatus = Exclude<Status, 'not_checked'>;
 
@@ -36,6 +36,13 @@ db.execSync(`
     synced_at TEXT
   );
   CREATE INDEX IF NOT EXISTS check_in_zone ON check_in (zone_id, checked_at);
+  -- Copy of the server's zones, so the app works with no signal.
+  CREATE TABLE IF NOT EXISTS zone (
+    id TEXT PRIMARY KEY NOT NULL,
+    code TEXT NOT NULL,
+    area TEXT NOT NULL DEFAULT '',
+    row_label TEXT NOT NULL DEFAULT ''
+  );
 `);
 
 /** RFC 4122 v4 ID. Hermes has no crypto.randomUUID; this is fine for record IDs. */
@@ -81,6 +88,52 @@ export function addCheckIn(input: Omit<CheckIn, 'id' | 'checked_at' | 'synced_at
   return row;
 }
 
+export type ZoneRow = { id: string; code: string; area: string; row_label: string };
+
+/** Replace the local copy of the zone list after a successful download. */
+export function replaceZones(rows: ZoneRow[]) {
+  db.withTransactionSync(() => {
+    db.runSync('DELETE FROM zone');
+    for (const r of rows) {
+      db.runSync(
+        'INSERT INTO zone (id, code, area, row_label) VALUES (?, ?, ?, ?)',
+        r.id,
+        r.code,
+        r.area,
+        r.row_label,
+      );
+    }
+  });
+  emit();
+}
+
+/** Check-ins saved on the phone that the server has not confirmed yet. */
+export function pendingCheckIns() {
+  return db.getAllSync<CheckIn>(
+    'SELECT * FROM check_in WHERE synced_at IS NULL ORDER BY checked_at',
+  );
+}
+
+export function markSynced(ids: string[]) {
+  if (ids.length === 0) return;
+  const now = new Date().toISOString();
+  db.withTransactionSync(() => {
+    for (const id of ids) db.runSync('UPDATE check_in SET synced_at = ? WHERE id = ?', now, id);
+  });
+  emit();
+}
+
+export function useUnsyncedCount() {
+  return useSyncExternalStore(subscribe, () => {
+    if (!countCache || countCache.version !== version) {
+      countCache = { version, n: unsyncedCount() };
+    }
+    return countCache.n;
+  });
+}
+
+let countCache: { version: number; n: number } | null = null;
+
 export function unsyncedCount() {
   return (
     db.getFirstSync<{ n: number }>('SELECT COUNT(*) AS n FROM check_in WHERE synced_at IS NULL')
@@ -96,20 +149,32 @@ function latestCheckIns() {
   );
 }
 
-/** Zones with the newest local check-in applied on top. */
+/** Zones from the local copy, with the newest local check-in applied on top. */
 function readZones(): Zone[] {
   const latest = new Map(latestCheckIns().map((c) => [c.zone_id, c]));
-  return ZONES.map((z) => {
-    const c = latest.get(z.id);
-    if (!c) return z;
-    return {
-      ...z,
-      status: c.status,
-      deadCount: c.dead_count,
-      moisture: c.moisture,
-      lastCheckedAt: c.checked_at,
-    };
-  });
+  return db
+    .getAllSync<ZoneRow>('SELECT id, code, area, row_label FROM zone ORDER BY code')
+    .map((r) => {
+      const base: Zone = {
+        id: r.id,
+        code: r.code,
+        area: r.area,
+        row: r.row_label,
+        status: 'not_checked',
+        deadCount: 0,
+        moisture: null,
+        lastCheckedAt: null,
+      };
+      const c = latest.get(r.id);
+      if (!c) return base;
+      return {
+        ...base,
+        status: c.status,
+        deadCount: c.dead_count,
+        moisture: c.moisture,
+        lastCheckedAt: c.checked_at,
+      };
+    });
 }
 
 let cache: { version: number; zones: Zone[] } | null = null;
