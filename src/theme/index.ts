@@ -23,3 +23,11 @@ export const radius = {
   pill: 999,
   sheet: 32,
 } as const;
+
+/** Status always pairs one of these with an icon and a word, never color alone. */
+export const statusColors = {
+  ok: '#2FBF5B',
+  needs_water: '#F7931E',
+  dead: '#E5484D',
+  not_checked: '#B8B8B2',
+} as const;
