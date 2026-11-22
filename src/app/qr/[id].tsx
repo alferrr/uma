@@ -55,7 +55,7 @@ export default function ZoneQr() {
 
   if (!zone) {
     return (
-      <AuthLayout heroRatio={0.24} art={<GreenStripes />} hero={<BackHero strong={t.qrCode} />}>
+      <AuthLayout heroRatio={0.3} art={<GreenStripes />} hero={<BackHero strong={t.qrCode} />}>
         <Text style={styles.hint}>{t.zoneNotFound}</Text>
       </AuthLayout>
     );
@@ -77,7 +77,7 @@ export default function ZoneQr() {
 
   return (
     <AuthLayout
-      heroRatio={0.24}
+      heroRatio={0.3}
       art={<GreenStripes />}
       hero={<BackHero lead={zone.code} strong={t.qrCode} />}
     >
