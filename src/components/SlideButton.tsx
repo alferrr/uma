@@ -9,6 +9,7 @@ import {
   type LayoutChangeEvent,
 } from 'react-native';
 
+import { useT } from '@/lib/i18n';
 import { colors, fonts, radius } from '@/theme';
 import { ArrowRight, Chevrons } from './icons';
 
@@ -25,6 +26,7 @@ type Props = {
  * (and use the standard accessibility activate action) to continue.
  */
 export function SlideButton({ label, onComplete }: Props) {
+  const t = useT();
   const [width, setWidth] = useState(0);
   const completeRef = useRef(onComplete);
   useEffect(() => {
@@ -87,15 +89,20 @@ export function SlideButton({ label, onComplete }: Props) {
       accessible
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityHint="Double tap to continue"
+      accessibilityHint={t.slideHint}
       onAccessibilityTap={slider.finish}
     >
-      {Platform.OS === 'ios' && <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />}
+      {Platform.OS === 'ios' && (
+        <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+      )}
       <Animated.Text style={[styles.label, { opacity: labelOpacity }]}>{label}</Animated.Text>
       <View style={styles.chevrons} pointerEvents="none">
         <Chevrons />
       </View>
-      <Animated.View style={[styles.knob, { transform: [{ translateX: slider.x }] }]} {...slider.pan.panHandlers}>
+      <Animated.View
+        style={[styles.knob, { transform: [{ translateX: slider.x }] }]}
+        {...slider.pan.panHandlers}
+      >
         <ArrowRight />
       </Animated.View>
     </View>

@@ -94,7 +94,7 @@ export default function MapScreen() {
 
       {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
-        <IconButton label="Back" onPress={() => router.back()}>
+        <IconButton label={t.back} onPress={() => router.back()}>
           <ChevronLeft />
         </IconButton>
         <View style={styles.farmPill}>

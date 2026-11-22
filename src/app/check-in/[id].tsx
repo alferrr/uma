@@ -85,7 +85,7 @@ export default function CheckIn() {
         <View style={styles.hero}>
           <GreenStripes style={StyleSheet.absoluteFill} />
           <View style={[styles.heroBar, { paddingTop: insets.top + 8 }]}>
-            <IconButton label="Back" onPress={() => router.back()}>
+            <IconButton label={t.back} onPress={() => router.back()}>
               <ChevronLeft />
             </IconButton>
             <View style={styles.pill}>

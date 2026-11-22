@@ -9,7 +9,7 @@ import { ChevronLeft } from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { TextField, type TextFieldHandle } from '@/components/TextField';
 import { isEmailOrPhone, signUp, type Role } from '@/lib/auth';
-import { afterSignInRoute } from '@/lib/i18n';
+import { afterSignInRoute, useT } from '@/lib/i18n';
 import { colors, fonts } from '@/theme';
 
 type Field = 'name' | 'contact' | 'password' | 'confirm' | 'form';
@@ -17,6 +17,7 @@ type Errors = Partial<Record<Field, string>>;
 
 /** Screen 3 · Sign up */
 export default function SignUp() {
+  const t = useT();
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [password, setPassword] = useState('');
@@ -31,10 +32,10 @@ export default function SignUp() {
 
   async function submit() {
     const next: Errors = {};
-    if (!name.trim()) next.name = 'Enter your name.';
-    if (!isEmailOrPhone(contact)) next.contact = 'Enter a valid email or mobile number.';
-    if (password.length < 6) next.password = 'Use at least 6 characters.';
-    if (confirm !== password) next.confirm = 'Passwords do not match.';
+    if (!name.trim()) next.name = t.nameRequired;
+    if (!isEmailOrPhone(contact)) next.contact = t.contactInvalid;
+    if (password.length < 6) next.password = t.passwordShort;
+    if (confirm !== password) next.confirm = t.passwordsDontMatch;
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -43,7 +44,7 @@ export default function SignUp() {
       await signUp({ name: name.trim(), contact: contact.trim(), role }, password);
       router.replace(afterSignInRoute());
     } catch (e) {
-      setErrors({ form: e instanceof Error ? e.message : 'Could not create account. Try again.' });
+      setErrors({ form: e instanceof Error ? e.message : t.signUpFailed });
     } finally {
       setLoading(false);
     }
@@ -65,21 +66,22 @@ export default function SignUp() {
             onPress={goBack}
             style={({ pressed }) => [styles.back, pressed && { opacity: 0.7 }]}
             accessibilityRole="button"
-            accessibilityLabel="Back"
+            accessibilityLabel={t.back}
             hitSlop={8}
           >
             <ChevronLeft />
           </Pressable>
           <Text style={styles.title} accessibilityRole="header">
-            Create your{'\n'}
-            <Text style={styles.titleStrong}>account</Text>
+            {t.createYour}
+            {'\n'}
+            <Text style={styles.titleStrong}>{t.accountWord}</Text>
           </Text>
         </>
       }
     >
       <View style={styles.fields}>
         <TextField
-          placeholder="Full name"
+          placeholder={t.fullName}
           value={name}
           onChangeText={setName}
           error={errors.name}
@@ -92,7 +94,7 @@ export default function SignUp() {
         />
         <TextField
           ref={contactRef}
-          placeholder="Email or phone"
+          placeholder={t.contactLabel}
           value={contact}
           onChangeText={setContact}
           error={errors.contact}
@@ -107,7 +109,7 @@ export default function SignUp() {
         />
         <TextField
           ref={passwordRef}
-          placeholder="Password"
+          placeholder={t.passwordLabel}
           value={password}
           onChangeText={setPassword}
           error={errors.password}
@@ -120,7 +122,7 @@ export default function SignUp() {
         />
         <TextField
           ref={confirmRef}
-          placeholder="Confirm password"
+          placeholder={t.confirmPassword}
           value={confirm}
           onChangeText={setConfirm}
           error={errors.confirm}
@@ -132,17 +134,21 @@ export default function SignUp() {
       </View>
 
       <Text style={styles.label} nativeID="role-label">
-        I am an
+        {t.iAmA}
       </Text>
-      <View style={styles.roles} accessibilityRole="radiogroup" accessibilityLabelledBy="role-label">
+      <View
+        style={styles.roles}
+        accessibilityRole="radiogroup"
+        accessibilityLabelledBy="role-label"
+      >
         <RoleChip
-          label="Owner"
+          label={t.roles.owner}
           selected={role === 'owner'}
           onPress={() => setRole('owner')}
           thumb={<GreenStripes />}
         />
         <RoleChip
-          label="Worker"
+          label={t.roles.worker}
           selected={role === 'worker'}
           onPress={() => setRole('worker')}
           thumb={<SunsetField />}
@@ -154,7 +160,7 @@ export default function SignUp() {
           {errors.form}
         </Text>
       )}
-      <PrimaryButton label="Create account" onPress={submit} loading={loading} />
+      <PrimaryButton label={t.createAccount} onPress={submit} loading={loading} />
     </AuthLayout>
   );
 }

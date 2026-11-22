@@ -62,7 +62,7 @@ export default function ZoneDetails() {
       <ZoneAerial style={StyleSheet.absoluteFill} />
 
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-        <IconButton label="Back" onPress={() => router.back()}>
+        <IconButton label={t.back} onPress={() => router.back()}>
           <ChevronLeft />
         </IconButton>
         <View style={styles.pill}>

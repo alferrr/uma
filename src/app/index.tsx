@@ -8,11 +8,12 @@ import { FieldRows, GreenStripes } from '@/components/art';
 import { LeafLogo } from '@/components/icons';
 import { SlideButton } from '@/components/SlideButton';
 import { restoreSession } from '@/lib/auth';
-import { afterSignInRoute } from '@/lib/i18n';
+import { afterSignInRoute, useT } from '@/lib/i18n';
 import { colors, fonts } from '@/theme';
 
 /** Screen 1 · Welcome */
 export default function Welcome() {
+  const t = useT();
   const insets = useSafeAreaInsets();
 
   // Already signed in (the session is kept on the phone): skip straight in.
@@ -31,26 +32,27 @@ export default function Welcome() {
         <LeafLogo size={58} />
 
         <View style={styles.headline} accessibilityRole="header">
-          <Text style={styles.line}>
-            <Text style={styles.strong}>Watch</Text> Every Plant
+          <Text style={styles.line} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+            <Text style={styles.strong}>{t.heroWatch}</Text> {t.heroEveryPlant}
           </Text>
           <View style={styles.row}>
             <View style={styles.thumb} accessible={false}>
               <GreenStripes />
             </View>
-            <Text style={styles.line}>
-              Lose <Text style={styles.strong}>Less</Text>
+            <Text style={styles.line} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+              {t.heroLose} <Text style={styles.strong}>{t.heroLess}</Text>
             </Text>
           </View>
         </View>
 
-        <Text style={styles.body}>
-          Know which zone needs water or has dead plants, even with no signal in the field.
-        </Text>
+        <Text style={styles.body}>{t.heroBody}</Text>
       </View>
 
       <View style={[styles.cta, { paddingBottom: insets.bottom + 20 }]}>
-        <SlideButton label="Get Started" onComplete={() => router.push('/language?onboarding=1')} />
+        <SlideButton
+          label={t.getStarted}
+          onComplete={() => router.push('/language?onboarding=1')}
+        />
       </View>
     </View>
   );

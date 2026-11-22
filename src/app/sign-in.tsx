@@ -9,13 +9,14 @@ import { LeafLogo, WifiIcon } from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { TextField, type TextFieldHandle } from '@/components/TextField';
 import { isEmailOrPhone, signIn } from '@/lib/auth';
-import { afterSignInRoute } from '@/lib/i18n';
+import { afterSignInRoute, useT } from '@/lib/i18n';
 import { colors, fonts } from '@/theme';
 
 type Errors = { contact?: string; password?: string; form?: string };
 
 /** Screen 2 · Sign in */
 export default function SignIn() {
+  const t = useT();
   const [contact, setContact] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Errors>({});
@@ -24,8 +25,8 @@ export default function SignIn() {
 
   async function submit() {
     const next: Errors = {};
-    if (!isEmailOrPhone(contact)) next.contact = 'Enter a valid email or mobile number.';
-    if (!password) next.password = 'Enter your password.';
+    if (!isEmailOrPhone(contact)) next.contact = t.contactInvalid;
+    if (!password) next.password = t.passwordRequired;
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -34,7 +35,7 @@ export default function SignIn() {
       await signIn(contact.trim(), password);
       router.replace(afterSignInRoute());
     } catch (e) {
-      setErrors({ form: e instanceof Error ? e.message : 'Could not sign in. Try again.' });
+      setErrors({ form: e instanceof Error ? e.message : t.signInFailed });
     } finally {
       setLoading(false);
     }
@@ -49,25 +50,26 @@ export default function SignIn() {
           <StatusBar style="light" />
           <LeafLogo size={50} color={colors.white} />
           <Text style={styles.title} accessibilityRole="header">
-            Welcome{'\n'}
-            <Text style={styles.titleStrong}>back</Text>
+            {t.welcomeWord}
+            {'\n'}
+            <Text style={styles.titleStrong}>{t.backWord}</Text>
           </Text>
         </>
       }
       footer={
         <Text style={styles.footerText}>
-          New to Uma?{' '}
+          {t.newToUma}{' '}
           <Link href="/sign-up" replace style={styles.footerLink}>
-            Create account
+            {t.createAccount}
           </Link>
         </Text>
       }
     >
-      <Text style={styles.heading}>Sign in</Text>
+      <Text style={styles.heading}>{t.signIn}</Text>
 
       <View style={styles.fields}>
         <TextField
-          placeholder="Email or phone"
+          placeholder={t.contactLabel}
           value={contact}
           onChangeText={setContact}
           error={errors.contact}
@@ -82,7 +84,7 @@ export default function SignIn() {
         />
         <TextField
           ref={passwordRef}
-          placeholder="Password"
+          placeholder={t.passwordLabel}
           value={password}
           onChangeText={setPassword}
           error={errors.password}
@@ -100,7 +102,7 @@ export default function SignIn() {
         accessibilityRole="button"
         onPress={() => router.push('/forgot-password')}
       >
-        <Text style={styles.forgotText}>Forgot password?</Text>
+        <Text style={styles.forgotText}>{t.forgotPassword}</Text>
       </Pressable>
 
       {!!errors.form && (
@@ -108,11 +110,11 @@ export default function SignIn() {
           {errors.form}
         </Text>
       )}
-      <PrimaryButton label="Sign in" onPress={submit} loading={loading} />
+      <PrimaryButton label={t.signIn} onPress={submit} loading={loading} />
 
       <View style={styles.note}>
         <WifiIcon />
-        <Text style={styles.noteText}>Internet is needed for your first sign-in.</Text>
+        <Text style={styles.noteText}>{t.internetNote}</Text>
       </View>
     </AuthLayout>
   );
