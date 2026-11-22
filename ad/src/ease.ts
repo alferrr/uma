@@ -1,33 +1,19 @@
-import { Easing, interpolate, spring } from 'remotion';
-
-import { FPS } from './theme';
+import { Easing, interpolate } from 'remotion';
 
 export const easeOut = Easing.bezier(0.33, 1, 0.68, 1); // ease-out cubic
 export const easeIn = Easing.bezier(0.32, 0, 0.67, 0); // ease-in cubic
+export const easeInOut = Easing.bezier(0.65, 0, 0.35, 1); // for morphs
 
-/** 0→1 over [start, start+duration] with ease-out cubic, clamped. */
-export function rise(frame: number, start: number, duration = 18) {
-  return interpolate(frame, [start, start + duration], [0, 1], {
-    easing: easeOut,
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-}
+const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 
-/** 1→0 over [start, start+duration] with ease-in cubic, clamped. */
-export function fall(frame: number, start: number, duration = 14) {
-  return interpolate(frame, [start, start + duration], [1, 0], {
-    easing: easeIn,
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-}
+/** 0→1 over [start, start+duration], ease-out, clamped. */
+export const rise = (f: number, start: number, duration = 16) =>
+  interpolate(f, [start, start + duration], [0, 1], { easing: easeOut, ...clamp });
 
-/** Critically damped spring: settles without overshoot. */
-export function calm(frame: number, delay = 0) {
-  return spring({
-    frame: frame - delay,
-    fps: FPS,
-    config: { damping: 200, stiffness: 120, mass: 1 },
-  });
-}
+/** 1→0 over [start, start+duration], ease-in, clamped. */
+export const fall = (f: number, start: number, duration = 12) =>
+  interpolate(f, [start, start + duration], [1, 0], { easing: easeIn, ...clamp });
+
+/** Piecewise keyframes with ease-in-out between each pair. */
+export const keys = (f: number, at: number[], values: number[]) =>
+  interpolate(f, at, values, { easing: easeInOut, ...clamp });

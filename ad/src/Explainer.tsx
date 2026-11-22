@@ -1,458 +1,569 @@
-import type { CSSProperties, ReactNode } from 'react';
-import { AbsoluteFill, Img, Sequence, staticFile, useCurrentFrame } from 'remotion';
+import type { ReactNode } from 'react';
+import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 
-import { AnimatedText } from './components/AnimatedText';
-import { DeviceFrame } from './components/DeviceFrame';
-import { EndCard } from './components/EndCard';
-import { Callout, Highlight, ScanLine, type Rect } from './components/Highlight';
-import { LogoReveal } from './components/LogoReveal';
-import { Scene } from './components/Scene';
-import { calm, fall, rise } from './ease';
+import { Logo } from './components/Logo';
+import { Ring, ScanSweep } from './components/Ring';
+import { Clip, FULL, Screen, type Crop, type Pose } from './components/Screen';
+import { TypeIn, WordPop } from './components/WordPop';
+import { easeIn, easeInOut, easeOut, fall, keys, rise } from './ease';
 import { loadFonts } from './fonts';
-import { C, FONT, type Layout } from './theme';
+import { C, FONT, SHOT, type Layout } from './theme';
 
 loadFonts();
 
-/** Spots in the real screenshots (screenshot pixels) that the ad points at. */
-const SPOT: Record<string, Rect> = {
-  scanWindow: { x: 255, y: 1035, w: 752, h: 752 },
-  zoneMoisture: { x: 800, y: 1445, w: 365, h: 115 },
-  checkinMoisture: { x: 440, y: 1700, w: 770, h: 450 },
-  mapSummary: { x: 40, y: 2080, w: 1180, h: 515 },
-  homeFirstZone: { x: 60, y: 2600, w: 1140, h: 136 },
-  profileSync: { x: 75, y: 2325, w: 1110, h: 195 },
-};
+export const TOTAL_FRAMES = 1330;
 
-/** Beats in order. Neighbouring beats overlap by OVERLAP frames for a soft crossfade. */
-const OVERLAP = 10;
-const BEATS = [
-  { id: 'problem', frames: 140 },
-  { id: 'meet', frames: 90 },
-  { id: 'scan', frames: 200 },
-  { id: 'moisture', frames: 150 },
-  { id: 'checkin', frames: 190 },
-  { id: 'farm', frames: 180 },
-  { id: 'offline', frames: 130 },
-  { id: 'languages', frames: 90 },
-  { id: 'end', frames: 130 },
-] as const;
+// ─── Spots in the real screenshots (screenshot px) ───
+const SCAN_WIN: Crop = { x: 255, y: 1035, w: 752, h: 752 };
+const ZONE_CARD: Crop = { x: 44, y: 1350, w: 1176, h: 380 };
+const MOIST_TXT: Crop = { x: 800, y: 1445, w: 365, h: 115 };
+const TILES: Crop = { x: 40, y: 1690, w: 1180, h: 470 };
+const JUST_RIGHT: Crop = { x: 452, y: 1816, w: 354, h: 324 };
+const MAP_SUMMARY: Crop = { x: 40, y: 2080, w: 1180, h: 515 };
+const PROFILE_SYNC: Crop = { x: 75, y: 2325, w: 1110, h: 195 };
+const QR_LABEL: Crop = { x: 75, y: 915, w: 1110, h: 995 };
+const TAGS: Crop[] = [
+  { x: 80, y: 754, w: 416, h: 104 }, // POT-01 Okay
+  { x: 684, y: 754, w: 366, h: 104 }, // Z-02 Okay
+  { x: 80, y: 1420, w: 502, h: 104 }, // Z-03 Not checked
+  { x: 684, y: 1420, w: 386, h: 104 }, // Z-04 Water
+];
+const FOCUS = 3;
 
-export const TOTAL_FRAMES =
-  BEATS.reduce((sum, b) => sum + b.frames, 0) - OVERLAP * (BEATS.length - 1);
+/** Stage layout for each aspect ratio. */
+function geo(layout: Layout, W: number, H: number) {
+  const L = layout === 'landscape';
+  const phoneW = L ? 400 : 560;
+  return {
+    L,
+    W,
+    H,
+    phone: { cx: W / 2, cy: L ? 560 : 1080, w: phoneW, h: (phoneW * SHOT.h) / SHOT.w },
+    card: { cx: W / 2, cy: L ? 600 : 1010, w: L ? 1100 : 940 },
+    big: L ? 112 : 92,
+    text: L ? 76 : 70,
+    caption: { top: L ? 110 : 300 },
+    labelGap: L ? 70 : 0,
+    list: { cx: L ? 1260 : W / 2, top: L ? 250 : 820, k: L ? 1.25 : 1.3, gap: L ? 34 : 40 },
+  };
+}
+type G = ReturnType<typeof geo>;
 
-type Dims = {
-  layout: Layout;
-  text: number;
-  screen: number;
-  twoUp: number;
-};
+const phonePose = (g: G, f: number, src: string, extra: Partial<Pose> = {}): Pose => ({
+  f,
+  src,
+  cx: g.phone.cx,
+  cy: g.phone.cy,
+  w: g.phone.w,
+  h: g.phone.h,
+  crop: FULL,
+  r: g.phone.w * 0.13,
+  bezel: 1,
+  ...extra,
+});
 
-const DIMS: Record<Layout, Dims> = {
-  landscape: { layout: 'landscape', text: 84, screen: 380, twoUp: 330 },
-  portrait: { layout: 'portrait', text: 76, screen: 520, twoUp: 400 },
-};
+const cardPose = (g: G, f: number, src: string, crop: Crop, extra: Partial<Pose> = {}): Pose => ({
+  f,
+  src,
+  cx: g.card.cx,
+  cy: g.card.cy,
+  w: g.card.w,
+  h: (g.card.w * crop.h) / crop.w,
+  crop,
+  r: 36,
+  bezel: 0,
+  ...extra,
+});
 
-/** Stack children on top of each other (for lines that swap in place). */
-const Stack = ({ children, style }: { children: ReactNode; style?: CSSProperties }) => (
-  <div style={{ display: 'grid', ...style }}>
-    {Array.isArray(children)
-      ? children.map((c, i) => (
-          <div key={i} style={{ gridArea: '1 / 1' }}>
-            {c}
-          </div>
-        ))
-      : children}
-  </div>
-);
+/** Where the focus-pull list puts each pill. */
+function pill(g: G, i: number, f: number) {
+  const w = TAGS[i]!.w * g.list.k;
+  const h = TAGS[i]!.h * g.list.k;
+  const drift = -Math.min(Math.max(f - 722, 0), 84) * 0.4; // slow upward drift, like the reference list
+  const cy = g.list.top + i * (h + g.list.gap) + h / 2 + drift;
+  return { w, h, cx: g.list.cx, cy };
+}
 
-/** Text column and phone area, side by side (16:9) or stacked (9:16). */
-function Split({ d, text, phone }: { d: Dims; text: ReactNode; phone: ReactNode }) {
-  if (d.layout === 'landscape') {
-    return (
-      <AbsoluteFill>
-        <div
-          style={{
-            position: 'absolute',
-            left: 150,
-            top: 0,
-            bottom: 0,
-            width: 720,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            gap: 40,
-          }}
-        >
-          {text}
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            left: 900,
-            right: 0,
-            top: 0,
-            bottom: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {phone}
-        </div>
-      </AbsoluteFill>
-    );
-  }
+function poses(g: G): Pose[] {
+  const offBelow = { cy: g.H + g.phone.h / 2 + 80 };
+  const z = pill(g, FOCUS, 806);
+  const small = { cx: g.W * 0.47, cy: g.H * (g.L ? 0.55 : 0.6), w: g.L ? 420 : 460, h: ((g.L ? 420 : 460) * ZONE_CARD.h) / ZONE_CARD.w, rot: -14 };
+  return [
+    phonePose(g, 210, 'scan.png', { ...offBelow, op: 1 }),
+    phonePose(g, 246, 'scan.png'),
+    phonePose(g, 318, 'scan.png'),
+    phonePose(g, 332, 'zone.png'),
+    phonePose(g, 384, 'zone.png'),
+    cardPose(g, 418, 'zone.png', ZONE_CARD),
+    cardPose(g, 492, 'zone.png', ZONE_CARD),
+    // Swoosh: the card rides the stroke, morphs into the next screen while small, and comes back.
+    { ...cardPose(g, 506, 'zone.png', ZONE_CARD), ...small },
+    { ...cardPose(g, 518, 'checkin.png', TILES), ...small, h: (small.w * TILES.h) / TILES.w },
+    cardPose(g, 536, 'checkin.png', TILES),
+    cardPose(g, 604, 'checkin.png', TILES),
+    phonePose(g, 636, 'checkin.png'),
+    phonePose(g, 640, 'checkin.png'),
+    phonePose(g, 654, 'saved.png'),
+    phonePose(g, 708, 'saved.png'),
+    phonePose(g, 726, 'saved.png', { w: g.phone.w * 0.7, h: g.phone.h * 0.7, cy: g.phone.cy + 80, op: 0 }),
+    // Hand-off from the focus-pull list: the tapped pill *is* the map, cropped.
+    { f: 805, src: 'map.png', cx: z.cx, cy: z.cy, w: z.w * 1.06, h: z.h * 1.06, crop: TAGS[FOCUS]!, r: (z.h * 1.06) / 2, bezel: 0, op: 0 },
+    { f: 806, src: 'map.png', cx: z.cx, cy: z.cy, w: z.w * 1.06, h: z.h * 1.06, crop: TAGS[FOCUS]!, r: (z.h * 1.06) / 2, bezel: 0, op: 1 },
+    phonePose(g, 846, 'map.png'),
+    phonePose(g, 914, 'map.png'),
+    phonePose(g, 928, 'profile-pending.png'),
+    phonePose(g, 968, 'profile-pending.png'),
+    phonePose(g, 982, 'profile-synced.png'),
+    phonePose(g, 1032, 'profile-synced.png'),
+    phonePose(g, 1050, 'profile-synced.png', { ...offBelow, op: 0 }),
+  ];
+}
+
+// ─── Building blocks ───
+
+/** Soft mint wash of the reference's type scenes, fading to white. */
+function Mint({ op }: { op: number }) {
+  if (op <= 0) return null;
   return (
-    <AbsoluteFill>
-      <div
-        style={{
-          position: 'absolute',
-          left: 80,
-          right: 80,
-          top: 150,
-          height: 400,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 30,
-        }}
-      >
-        {text}
-      </div>
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: 590,
-          bottom: 50,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {phone}
-      </div>
-    </AbsoluteFill>
+    <AbsoluteFill
+      style={{
+        opacity: op,
+        background:
+          'radial-gradient(ellipse 90% 80% at 15% 10%, #CDEBD7 0%, #E6F5EB 45%, #FFFFFF 100%)',
+      }}
+    />
   );
 }
 
-/** Phone rising from below into place, like the reference. */
-function Rise({ children, delay = 0, still = false }: { children: ReactNode; delay?: number; still?: boolean }) {
-  const f = useCurrentFrame();
-  const p = still ? 1 : calm(f, delay);
-  return (
-    <div style={{ position: 'relative', transform: `translateY(${(1 - p) * 320}px)`, opacity: Math.min(1, p * 1.4) }}>
-      {children}
-    </div>
-  );
-}
-
-const align = (d: Dims) => (d.layout === 'landscape' ? 'left' : 'center');
-
-// ───────────────────────── beats ─────────────────────────
-
-function Problem({ d }: { d: Dims }) {
-  const size = d.layout === 'landscape' ? 104 : 88;
-  return (
-    <Scene duration={140}>
-      <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', padding: 80 }}>
-        <Stack>
-          <AnimatedText text="Plants dry out|**unnoticed.**" start={6} exit={62} size={size} align="center" />
-          <AnimatedText text="Which zone?|**Checked when?**" start={74} size={size} align="center" />
-        </Stack>
-      </AbsoluteFill>
-    </Scene>
-  );
-}
-
-function Meet({ d }: { d: Dims }) {
-  return (
-    <Scene duration={90} pushIn>
-      <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <LogoReveal size={d.layout === 'landscape' ? 150 : 120} />
-      </AbsoluteFill>
-    </Scene>
-  );
-}
-
-/** The real printed-label part of the QR screen, cropped from the screenshot. */
-function QrLabel({ width, start, scanAt }: { width: number; start: number; scanAt: number }) {
-  const f = useCurrentFrame();
-  const crop = { x: 75, y: 915, w: 1110, h: 995 };
-  const k = width / crop.w;
-  const t = rise(f, start, 18);
-  const local = f - scanAt;
-  const sweep = local >= 0 && local <= 52 ? (local % 26) / 26 : -1;
+/** Green glow behind the phone. */
+function Glow({ g, op }: { g: G; op: number }) {
+  if (op <= 0) return null;
+  const d = g.phone.h * 1.6;
   return (
     <div
       style={{
         position: 'absolute',
-        width,
-        height: crop.h * k,
-        borderRadius: 28,
-        overflow: 'hidden',
-        background: C.white,
-        boxShadow: '0 30px 70px rgba(20,20,20,0.16)',
-        opacity: t,
-        transform: `translateX(${(1 - t) * -60}px) rotate(-5deg)`,
+        left: g.phone.cx - d / 2,
+        top: g.phone.cy - d / 2,
+        width: d,
+        height: d,
+        borderRadius: '50%',
+        opacity: op,
+        background: 'radial-gradient(circle, rgba(22,146,63,0.42) 0%, rgba(22,146,63,0.16) 38%, rgba(22,146,63,0) 68%)',
       }}
-    >
-      <Img
-        src={staticFile('screens/qr.png')}
-        style={{ position: 'absolute', width: 1260 * k, left: -crop.x * k, top: -crop.y * k }}
-      />
-      {sweep >= 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            left: 24,
-            right: 24,
-            top: `${10 + sweep * 62}%`,
-            height: 4,
-            borderRadius: 2,
-            background: C.green,
-            boxShadow: `0 0 18px ${C.green}`,
-          }}
-        />
-      )}
-    </div>
+    />
   );
 }
 
-function Scan({ d }: { d: Dims }) {
-  const label = d.layout === 'landscape' ? 300 : 250;
-  return (
-    <Scene duration={200}>
-      <Split
-        d={d}
-        text={
-          <Stack>
-            <AnimatedText text="Scan the zone's|**QR code.**" start={18} exit={112} size={d.text} align={align(d)} />
-            <AnimatedText text="The zone|**opens.**" start={126} size={d.text} align={align(d)} />
-          </Stack>
-        }
-        phone={
-          <Rise delay={2}>
-            <DeviceFrame src="scan.png" next="zone.png" swapAt={118} width={d.screen}>
-              <ScanLine rect={SPOT.scanWindow} start={58} />
-            </DeviceFrame>
-            <div style={{ position: 'absolute', left: -label * 0.78, top: '40%' }}>
-              <QrLabel width={label} start={34} scanAt={58} />
-            </div>
-          </Rise>
-        }
-      />
-    </Scene>
-  );
-}
-
-function Moisture({ d }: { d: Dims }) {
-  const callout = (
-    <Callout value={54} suffix="%" label="Soil moisture" note="Sample reading" start={30} size={d.layout === 'landscape' ? 1 : 0.85} />
-  );
-  return (
-    <Scene duration={150}>
-      <Split
-        d={d}
-        text={
-          <>
-            <AnimatedText text="See its|**soil moisture.**" start={8} size={d.text} align={align(d)} />
-            {d.layout === 'landscape' && callout}
-          </>
-        }
-        phone={
-          <Rise still>
-            <DeviceFrame src="zone.png" width={d.screen}>
-              <Highlight rect={SPOT.zoneMoisture} start={22} radius={30} />
-            </DeviceFrame>
-            {d.layout === 'portrait' && (
-              <div style={{ position: 'absolute', left: -150, top: 60 }}>{callout}</div>
-            )}
-          </Rise>
-        }
-      />
-    </Scene>
-  );
-}
-
-function CheckIn({ d }: { d: Dims }) {
-  return (
-    <Scene duration={190}>
-      <Split
-        d={d}
-        text={
-          <Stack>
-            <AnimatedText text="Moisture already|**filled in.**" start={10} exit={108} size={d.text} align={align(d)} />
-            <AnimatedText text="Saved in a|**few taps.**" start={122} size={d.text} align={align(d)} />
-          </Stack>
-        }
-        phone={
-          <Rise delay={0}>
-            <DeviceFrame src="checkin.png" next="saved.png" swapAt={114} width={d.screen}>
-              <Highlight rect={SPOT.checkinMoisture} start={34} end={104} radius={60} />
-            </DeviceFrame>
-          </Rise>
-        }
-      />
-    </Scene>
-  );
-}
-
-function Farm({ d }: { d: Dims }) {
-  const f = useCurrentFrame();
-  const second = rise(f, 10, 18);
-  const phones = (
-    <div style={{ display: 'flex', gap: d.layout === 'landscape' ? 40 : 30, alignItems: 'center' }}>
-      <Rise delay={0}>
-        <DeviceFrame src="map.png" width={d.twoUp}>
-          <Highlight rect={SPOT.mapSummary} start={46} end={100} radius={90} />
-        </DeviceFrame>
-      </Rise>
-      <div style={{ opacity: second, transform: `translateY(${(1 - second) * 60}px)` }}>
-        <DeviceFrame src="home.png" width={d.twoUp}>
-          <Highlight rect={SPOT.homeFirstZone} start={118} radius={60} />
-        </DeviceFrame>
-      </div>
-    </div>
-  );
-  return (
-    <Scene duration={180}>
-      {d.layout === 'landscape' ? (
-        <AbsoluteFill>
-          <div style={{ position: 'absolute', left: 150, top: 0, bottom: 0, width: 640, display: 'flex', alignItems: 'center' }}>
-            <Stack>
-              <AnimatedText text="The whole farm|**at a glance.**" start={8} exit={104} size={d.text} />
-              <AnimatedText text="Zones needing|a visit **first.**" start={116} size={d.text} />
-            </Stack>
-          </div>
-          <div style={{ position: 'absolute', left: 820, right: 40, top: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {phones}
-          </div>
-        </AbsoluteFill>
-      ) : (
-        <Split
-          d={d}
-          text={
-            <Stack>
-              <AnimatedText text="The whole farm|**at a glance.**" start={8} exit={104} size={d.text} align="center" />
-              <AnimatedText text="Zones needing|a visit **first.**" start={116} size={d.text} align="center" />
-            </Stack>
-          }
-          phone={phones}
-        />
-      )}
-    </Scene>
-  );
-}
-
-function Offline({ d }: { d: Dims }) {
-  return (
-    <Scene duration={130}>
-      <Split
-        d={d}
-        text={
-          <Stack>
-            <AnimatedText text="Works|**offline.**" start={8} exit={64} size={d.text} align={align(d)} />
-            <AnimatedText text="Syncs when|**back online.**" start={76} size={d.text} align={align(d)} />
-          </Stack>
-        }
-        phone={
-          <Rise delay={0}>
-            <DeviceFrame src="profile-pending.png" next="profile-synced.png" swapAt={70} width={d.screen}>
-              <Highlight rect={SPOT.profileSync} start={22} radius={70} />
-            </DeviceFrame>
-          </Rise>
-        }
-      />
-    </Scene>
-  );
-}
-
-function Languages({ d }: { d: Dims }) {
-  const f = useCurrentFrame();
-  const size = d.layout === 'landscape' ? 1 : 0.9;
-  const chips = ['Cebuano', 'English', 'Tagalog'];
-  return (
-    <Scene duration={90}>
-      <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', gap: 56 * size }}>
-        <AnimatedText text="In **three languages.**" start={6} size={d.layout === 'landscape' ? 96 : 84} align="center" />
-        <div style={{ display: 'flex', gap: 22 * size, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {chips.map((c, i) => {
-            const t = rise(f, 24 + i * 8, 16);
-            const active = c === 'English';
-            return (
-              <div
-                key={c}
-                style={{
-                  fontFamily: FONT,
-                  fontSize: 44 * size,
-                  fontWeight: 500,
-                  padding: `${20 * size}px ${44 * size}px`,
-                  borderRadius: 999,
-                  background: active ? C.orange : C.panel,
-                  color: active ? C.white : C.text,
-                  opacity: t,
-                  transform: `translateY(${(1 - t) * 30}px)`,
-                }}
-              >
-                {c}
-              </div>
-            );
-          })}
+/** Two short labels either side of the phone (landscape) or above it (portrait). */
+function Labels({ g, left, right, start, exit }: { g: G; left: string; right: string; start: number; exit: number }) {
+  if (g.L) {
+    const half = g.phone.w / 2 + g.labelGap;
+    return (
+      <>
+        <div style={{ position: 'absolute', right: g.W - (g.phone.cx - half), top: g.phone.cy - 120, width: 640 }}>
+          <WordPop text={left} start={start} exit={exit} size={g.text} align="right" />
         </div>
-      </AbsoluteFill>
-    </Scene>
-  );
-}
-
-function End({ d }: { d: Dims }) {
-  const f = useCurrentFrame();
+        <div style={{ position: 'absolute', left: g.phone.cx + half, top: g.phone.cy - 120, width: 640 }}>
+          <WordPop text={`**${right}**`} start={start + 8} exit={exit + 4} size={g.text} align="left" />
+        </div>
+      </>
+    );
+  }
   return (
-    <AbsoluteFill style={{ opacity: rise(f, 0, 8) * fall(f, 200, 10) }}>
-      <EndCard scale={d.layout === 'landscape' ? 1 : 0.95} />
-    </AbsoluteFill>
+    <div style={{ position: 'absolute', left: 60, right: 60, top: 170 }}>
+      <WordPop text={`${left}|**${right}**`} start={start} exit={exit} size={g.text} />
+    </div>
   );
 }
 
-const RENDER: Record<(typeof BEATS)[number]['id'], (p: { d: Dims }) => React.JSX.Element> = {
-  problem: Problem,
-  meet: Meet,
-  scan: Scan,
-  moisture: Moisture,
-  checkin: CheckIn,
-  farm: Farm,
-  offline: Offline,
-  languages: Languages,
-  end: End,
-};
+/** A caption above a zoomed card. */
+function Caption({ g, text, start, exit }: { g: G; text: string; start: number; exit: number }) {
+  return (
+    <div style={{ position: 'absolute', left: 80, right: 80, top: g.caption.top }}>
+      <WordPop text={text} start={start} exit={exit} size={g.text} />
+    </div>
+  );
+}
+
+/** Mouse pointer, as in the reference's taps. */
+function Pointer({ x, y, press }: { x: number; y: number; press: number }) {
+  return (
+    <svg
+      width={58}
+      height={58}
+      viewBox="0 0 24 24"
+      style={{ position: 'absolute', left: x, top: y, transform: `scale(${1 - press * 0.18})`, transformOrigin: '4px 3px' }}
+    >
+      <path
+        d="M4 3l14.5 7.2-6.3 1.6 3.9 7.2-2.7 1.4-3.9-7.2L5 17.4z"
+        fill="#fff"
+        stroke={C.text}
+        strokeWidth={1.4}
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Whip-pan: the content slides left fast with a directional blur made of trails. */
+function Whip({ dx, v, children }: { dx: number; v: number; children: ReactNode }) {
+  const n = Math.abs(v) > 4 ? 7 : 1;
+  return (
+    <>
+      {Array.from({ length: n }, (_, i) => (
+        <AbsoluteFill
+          key={i}
+          style={{
+            transform: `translateX(${dx + (i * v) / 2.2}px)`,
+            opacity: n === 1 ? 1 : (i === 0 ? 0.5 : 0.5 / (i + 1)),
+          }}
+        >
+          {children}
+        </AbsoluteFill>
+      ))}
+    </>
+  );
+}
+
+// ─── The video ───
 
 export function Explainer({ layout }: { layout: Layout }) {
-  const d = DIMS[layout];
-  let from = 0;
+  const f = useCurrentFrame();
+  const { width: W, height: H } = useVideoConfig();
+  const g = geo(layout, W, H);
+
+  // Background washes.
+  const mint = Math.min(keys(f, [0, 8, 196, 214], [0, 1, 1, 0]), 1) + keys(f, [1044, 1058, 1136, 1148], [0, 1, 1, 0]);
+  const glow = keys(f, [210, 244, 384, 410, 604, 632, 708, 724, 806, 840, 1032, 1050], [0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0]);
+
+  // Meet Uma: hold, slow push, then whip-pan left.
+  const push = keys(f, [168, 200], [1, 1.12]);
+  const whip = (t: number) => interpolate(t, [198, 216], [0, -W * 1.35], { easing: easeIn, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const meetSize = g.L ? 128 : 104;
+
   return (
-    <AbsoluteFill style={{ backgroundColor: C.white }}>
-      {BEATS.map((b) => {
-        const Beat = RENDER[b.id];
-        const seq = (
-          <Sequence key={b.id} from={from} durationInFrames={b.frames} name={b.id}>
-            <Beat d={d} />
-          </Sequence>
-        );
-        from += b.frames - OVERLAP;
-        return seq;
-      })}
+    <AbsoluteFill style={{ backgroundColor: C.white, fontFamily: FONT, overflow: 'hidden' }}>
+      <Mint op={mint} />
+
+      {/* 1. Problem: kinetic type */}
+      {f < 124 && (
+        <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', padding: 80 }}>
+          <div style={{ display: 'grid', width: '100%' }}>
+            <div style={{ gridArea: '1 / 1' }}>
+              <WordPop text={g.L ? 'Plants dry out **unnoticed.**' : 'Plants dry out|**unnoticed.**'} start={6} exit={50} size={g.big} />
+            </div>
+            <div style={{ gridArea: '1 / 1' }}>
+              <WordPop text={g.L ? 'Which zone? **Checked when?**' : 'Which zone?|**Checked when?**'} start={62} exit={110} size={g.big} />
+            </div>
+          </div>
+        </AbsoluteFill>
+      )}
+
+      {/* 2. Meet Uma */}
+      {f >= 116 && f < 220 && (
+        <Whip dx={whip(f)} v={whip(f) - whip(f - 1)}>
+          <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', transform: `scale(${push})` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: meetSize * 0.26 }}>
+              <TypeIn text="Meet" start={120} size={meetSize} color={C.text} from={C.green} every={3} />
+              <Logo size={meetSize * 1.02} start={134} />
+              <TypeIn text="Uma" start={148} size={meetSize} color={C.green} from="#C9C9C4" every={3} />
+            </div>
+          </AbsoluteFill>
+        </Whip>
+      )}
+
+      {/* 3–8. One morphing screen */}
+      <Glow g={g} op={glow} />
+      <QrCard g={g} />
+      <Swoosh g={g} />
+      <Screen poses={poses(g)}>
+        {(src) => (
+          <>
+            {src === 'scan.png' && <ScanSweep rect={SCAN_WIN} start={268} />}
+            {src === 'zone.png' && <Ring rect={MOIST_TXT} start={428} end={486} radius={30} />}
+            {src === 'checkin.png' && <Ring rect={JUST_RIGHT} start={542} end={598} radius={60} />}
+            {src === 'map.png' && <Ring rect={MAP_SUMMARY} start={860} end={908} radius={90} />}
+            {src.startsWith('profile') && <Ring rect={PROFILE_SYNC} start={936} end={1026} radius={70} />}
+          </>
+        )}
+      </Screen>
+
+      <Labels g={g} left="Scan the" right="QR code." start={236} exit={316} />
+      <Labels g={g} left="The zone" right="opens." start={334} exit={378} />
+      <Caption g={g} text={g.L ? 'See its **soil moisture.**' : 'See its|**soil moisture.**'} start={420} exit={486} />
+      <Count g={g} />
+      <Caption g={g} text={g.L ? 'Moisture already **filled in.**' : 'Moisture already|**filled in.**'} start={532} exit={598} />
+      <Labels g={g} left="Saved in a" right="few taps." start={646} exit={704} />
+      <FocusList g={g} />
+      <Labels g={g} left="The whole farm" right="at a glance." start={848} exit={910} />
+      <Labels g={g} left="Works" right="offline." start={928} exit={966} />
+      <Labels g={g} left="Syncs when" right="back online." start={980} exit={1028} />
+
+      {/* 9. Languages: kinetic type */}
+      {f >= 1046 && f < 1150 && (
+        <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', padding: 80 }}>
+          <div style={{ display: 'grid', width: '100%' }}>
+            <div style={{ gridArea: '1 / 1' }}>
+              <WordPop text="In **three languages.**" start={1050} exit={1088} size={g.big} />
+            </div>
+            <div style={{ gridArea: '1 / 1' }}>
+              <WordPop
+                text={g.L ? 'Cebuano · **English** · Tagalog' : 'Cebuano|**English**|Tagalog'}
+                start={1096}
+                exit={1136}
+                size={g.big}
+                stagger={6}
+              />
+            </div>
+          </div>
+        </AbsoluteFill>
+      )}
+
+      {/* 10. Green CTA → arrow → white */}
+      <Cta g={g} />
+
+      {/* 11. End card */}
+      {f >= 1220 && <End g={g} />}
     </AbsoluteFill>
   );
 }
 
-/** Start frame of each beat, for stills and checks. */
-export const BEAT_STARTS = (() => {
-  let from = 0;
-  return BEATS.map((b) => {
-    const s = { id: b.id, from, frames: b.frames };
-    from += b.frames - OVERLAP;
-    return s;
-  });
-})();
+/** The real QR label (cropped from the app's QR screen) slides in beside the phone and is scanned. */
+function QrCard({ g }: { g: G }) {
+  const f = useCurrentFrame();
+  const t = rise(f, 250, 18) * fall(f, 318, 14);
+  if (t <= 0) return null;
+  const w = g.L ? 300 : 300;
+  const k = w / QR_LABEL.w;
+  const x = g.L ? g.phone.cx - g.phone.w / 2 - w * 0.62 : g.phone.cx - g.phone.w / 2 - w * 0.35;
+  const y = g.phone.cy + (g.L ? 60 : 160);
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        opacity: t,
+        transform: `translateX(${(1 - rise(f, 250, 18)) * -160}px) rotate(-6deg)`,
+        boxShadow: '0 30px 70px rgba(20,20,20,0.18)',
+        borderRadius: 26,
+        zIndex: 2,
+      }}
+    >
+      <Clip src="qr.png" crop={QR_LABEL} width={w} radius={26} />
+    </div>
+  );
+}
+
+/** Thick green stroke sweeping across, carrying the card (the reference's swoosh). */
+function Swoosh({ g }: { g: G }) {
+  const f = useCurrentFrame();
+  const p = interpolate(f, [488, 534], [0, 1], { easing: easeInOut, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  if (p <= 0 || p >= 1) return null;
+  const { W, H } = g;
+  const d = g.L
+    ? `M ${-0.25 * W} ${0.95 * H} C ${0.25 * W} ${0.75 * H}, ${0.6 * W} ${0.55 * H}, ${1.25 * W} ${0.12 * H}`
+    : `M ${-0.3 * W} ${0.82 * H} C ${0.3 * W} ${0.7 * H}, ${0.7 * W} ${0.45 * H}, ${1.3 * W} ${0.22 * H}`;
+  const len = 0.5;
+  return (
+    <svg width={W} height={H} style={{ position: 'absolute', inset: 0 }}>
+      <path
+        d={d}
+        pathLength={1}
+        fill="none"
+        stroke={C.green}
+        strokeWidth={g.L ? 230 : 250}
+        strokeLinecap="round"
+        strokeDasharray={`${len} ${1 + len}`}
+        strokeDashoffset={len - p * (1 + len)}
+      />
+    </svg>
+  );
+}
+
+/** Count-up to the moisture value shown in the app. */
+function Count({ g }: { g: G }) {
+  const f = useCurrentFrame();
+  const t = rise(f, 436, 14) * fall(f, 484, 10);
+  if (t <= 0) return null;
+  const n = Math.round(interpolate(f, [438, 468], [0, 54], { easing: easeOut, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
+  const cardH = (g.card.w * ZONE_CARD.h) / ZONE_CARD.w;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: g.card.cy + cardH / 2 + (g.L ? 40 : 60),
+        display: 'flex',
+        alignItems: 'baseline',
+        justifyContent: 'center',
+        gap: 24,
+        opacity: t,
+        transform: `translateY(${(1 - t) * 30}px)`,
+      }}
+    >
+      <span style={{ fontSize: g.L ? 120 : 130, fontWeight: 600, color: C.text, lineHeight: 1 }}>
+        {n}
+        <span style={{ color: C.orange }}>%</span>
+      </span>
+      <span style={{ fontSize: g.L ? 34 : 34, color: C.muted, lineHeight: 1.3 }}>
+        Soil moisture
+        <br />
+        Sample reading
+      </span>
+    </div>
+  );
+}
+
+/** Zone pills (cropped from the real map) with a focus pull and a tap, like the reference's list. */
+function FocusList({ g }: { g: G }) {
+  const f = useCurrentFrame();
+  if (f < 718 || f > 820) return null;
+  const focus = rise(f, 770, 14);
+  const press = interpolate(f, [794, 798, 804], [0, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const z = pill(g, FOCUS, f);
+  const cur = {
+    x: interpolate(f, [772, 792], [z.cx + z.w, z.cx + z.w * 0.32], { easing: easeOut, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+    y: interpolate(f, [772, 792], [z.cy + 220, z.cy - 6], { easing: easeOut, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+  };
+  return (
+    <>
+      {g.L ? (
+        <div style={{ position: 'absolute', left: 150, top: 380, width: 640 }}>
+          <WordPop text="Spot the zone|**that needs water.**" start={728} exit={800} size={g.text} align="left" />
+        </div>
+      ) : (
+        <div style={{ position: 'absolute', left: 60, right: 60, top: 400 }}>
+          <WordPop text="Spot the zone|**that needs water.**" start={728} exit={800} size={g.text} />
+        </div>
+      )}
+      {TAGS.map((crop, i) => {
+        const p = pill(g, i, f);
+        const t = rise(f, 722 + i * 5, 16);
+        const isFocus = i === FOCUS;
+        if (isFocus && f >= 806) return null;
+        const others = fall(f, 800, 10);
+        const scale = isFocus ? 1 + focus * 0.06 - press * 0.04 : 1 - focus * 0.04;
+        return (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              left: p.cx - p.w / 2,
+              top: p.cy - p.h / 2,
+              opacity: t * (isFocus ? 1 : others * (1 - focus * 0.45)),
+              filter: isFocus ? undefined : `blur(${focus * 5}px)`,
+              transform: `translateY(${(1 - t) * 60}px) scale(${scale})`,
+              boxShadow: isFocus ? `0 18px 50px rgba(22,146,63,${0.25 * focus})` : 'none',
+              borderRadius: p.h / 2,
+            }}
+          >
+            <Clip src="map.png" crop={crop} width={p.w} radius={p.h / 2} />
+          </div>
+        );
+      })}
+      {f >= 772 && f < 806 && <Pointer x={cur.x} y={cur.y} press={press} />}
+    </>
+  );
+}
+
+/** Green panel with a pill that collapses into its arrow; the arrow circle grows into white. */
+function Cta({ g }: { g: G }) {
+  const f = useCurrentFrame();
+  if (f < 1140 || f > 1226) return null;
+  const { W, H } = g;
+  const reveal = interpolate(f, [1140, 1158], [0, 1], { easing: easeInOut, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const pillIn = rise(f, 1154, 14);
+  const collapse = interpolate(f, [1188, 1202], [0, 1], { easing: easeInOut, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const grow = interpolate(f, [1204, 1222], [0, 1], { easing: easeIn, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const h = g.L ? 104 : 100;
+  const full = g.L ? 600 : 620;
+  const w = full + (h - full) * collapse;
+  const cover = (Math.hypot(W, H) / h) * 1.15;
+  return (
+    <AbsoluteFill style={{ clipPath: `circle(${reveal * 75}% at 50% 50%)`, background: C.green, alignItems: 'center', justifyContent: 'center' }}>
+      <div
+        style={{
+          width: w,
+          height: h,
+          borderRadius: h / 2,
+          background: C.white,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          overflow: 'hidden',
+          opacity: pillIn,
+          transform: `scale(${(0.6 + 0.4 * pillIn) * (1 + grow * (cover - 1))})`,
+        }}
+      >
+        <span
+          style={{
+            flex: 1,
+            paddingLeft: h * 0.42,
+            fontSize: h * 0.36,
+            fontWeight: 600,
+            color: C.green,
+            whiteSpace: 'nowrap',
+            opacity: 1 - collapse * 1.6,
+          }}
+        >
+          Watch every plant
+        </span>
+        <div
+          style={{
+            width: h * 0.72,
+            height: h * 0.72,
+            margin: h * 0.14,
+            borderRadius: '50%',
+            background: C.green,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            opacity: 1 - grow * 2,
+          }}
+        >
+          <svg width={h * 0.4} height={h * 0.4} viewBox="0 0 24 24">
+            <path d="M4 12h15M13 6l6 6-6 6" fill="none" stroke="#fff" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+function End({ g }: { g: G }) {
+  const f = useCurrentFrame();
+  const tag = rise(f, 1276, 14);
+  const logo = g.L ? 170 : 190;
+  return (
+    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+      <Logo size={logo} start={1228} />
+      <div style={{ marginTop: 28 }}>
+        <TypeIn text="Uma" start={1246} size={g.L ? 120 : 128} color={C.text} from="#C9C9C4" every={3} />
+      </div>
+      <div style={{ marginTop: 14, width: g.W - 120 }}>
+        <WordPop text="Watch every plant. **Lose less.**" start={1258} size={g.L ? 48 : 52} />
+      </div>
+      <div
+        style={{
+          marginTop: 30,
+          padding: '10px 26px',
+          borderRadius: 999,
+          background: C.panel,
+          color: C.muted,
+          fontSize: 26,
+          fontWeight: 500,
+          letterSpacing: 1.5,
+          textTransform: 'uppercase',
+          opacity: tag,
+          transform: `translateY(${(1 - tag) * 16}px)`,
+        }}
+      >
+        Prototype
+      </div>
+    </AbsoluteFill>
+  );
+}
