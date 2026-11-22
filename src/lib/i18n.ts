@@ -77,6 +77,9 @@ const en = {
   deleteZoneBody: 'Its check-ins are deleted too. This cannot be undone.',
   deleteFailed: 'Could not delete. Check your connection and try again.',
   addFarmFirst: 'Add a farm first.',
+  youAreInPrefix: 'You are in',
+  youAreIn: (name: string) => `You are in ${name}`,
+  changeFarm: 'Change farm?',
   weather: 'Weather',
   weatherPlace: 'Cebu City',
   conditions: {
@@ -197,6 +200,9 @@ const ceb: Strings = {
   deleteZoneBody: 'Mapapas usab ang mga check-in niini. Dili na kini mabalik.',
   deleteFailed: 'Wala mapapas. Susiha ang koneksyon ug sulayi pag-usab.',
   addFarmFirst: 'Idugang una ang usa ka uma.',
+  youAreInPrefix: 'Naa ka sa',
+  youAreIn: (name) => `Naa ka sa ${name}`,
+  changeFarm: 'Ilisan ang uma?',
   weather: 'Panahon',
   weatherPlace: 'Cebu City',
   conditions: {
@@ -315,6 +321,9 @@ const tl: Strings = {
   deleteZoneBody: 'Buburahin din ang mga check-in nito. Hindi na ito maibabalik.',
   deleteFailed: 'Hindi nabura. Suriin ang koneksyon at subukan ulit.',
   addFarmFirst: 'Magdagdag muna ng bukid.',
+  youAreInPrefix: 'Nasa',
+  youAreIn: (name) => `Nasa ${name} ka`,
+  changeFarm: 'Palitan ang bukid?',
   weather: 'Panahon',
   weatherPlace: 'Cebu City',
   conditions: {
