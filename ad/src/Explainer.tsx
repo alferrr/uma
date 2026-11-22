@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, interpolate, Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
 
 import { Logo } from './components/Logo';
 import { Ring, ScanSweep } from './components/Ring';
@@ -11,7 +11,9 @@ import { C, FONT, SHOT, type Layout } from './theme';
 
 loadFonts();
 
-export const TOTAL_FRAMES = 1330;
+/** The intro runs this many frames longer than the rest was built for; everything after it shifts. */
+const INTRO_EXTRA = 64;
+export const TOTAL_FRAMES = 1330 + INTRO_EXTRA;
 
 // ─── Spots in the real screenshots (screenshot px) ───
 const SCAN_WIN: Crop = { x: 255, y: 1035, w: 752, h: 752 };
@@ -300,14 +302,14 @@ function Whip({ dx, v, children }: { dx: number; v: number; children: ReactNode 
 
 // ─── The video ───
 
-export function Explainer({ layout }: { layout: Layout }) {
+function Rest({ layout }: { layout: Layout }) {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const g = geo(layout, W, H);
 
   // Background washes.
   const mint =
-    Math.min(keys(f, [0, 8, 196, 214], [0, 1, 1, 0]), 1) +
+    Math.min(keys(f, [100, 112, 196, 214], [0, 1, 1, 0]), 1) +
     keys(f, [1044, 1058, 1136, 1148], [0, 1, 1, 0]);
   const glow = keys(
     f,
@@ -326,32 +328,8 @@ export function Explainer({ layout }: { layout: Layout }) {
   const meetSize = g.L ? 128 : 104;
 
   return (
-    <AbsoluteFill style={{ backgroundColor: C.white, fontFamily: FONT, overflow: 'hidden' }}>
+    <AbsoluteFill style={{ fontFamily: FONT, overflow: 'hidden' }}>
       <Mint op={mint} />
-
-      {/* 1. Problem: kinetic type */}
-      {f < 124 && (
-        <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', padding: 80 }}>
-          <div style={{ display: 'grid', width: '100%' }}>
-            <div style={{ gridArea: '1 / 1' }}>
-              <WordPop
-                text={g.L ? 'Plants dry out **unnoticed.**' : 'Plants dry out|**unnoticed.**'}
-                start={6}
-                exit={50}
-                size={g.big}
-              />
-            </div>
-            <div style={{ gridArea: '1 / 1' }}>
-              <WordPop
-                text={g.L ? 'Which zone? **Checked when?**' : 'Which zone?|**Checked when?**'}
-                start={62}
-                exit={110}
-                size={g.big}
-              />
-            </div>
-          </div>
-        </AbsoluteFill>
-      )}
 
       {/* 2. Meet Uma */}
       {f >= 116 && f < 220 && (
@@ -741,6 +719,55 @@ function End({ g }: { g: G }) {
       <div style={{ marginTop: 14, width: g.W - 120 }}>
         <WordPop text="Watch every plant. **Lose less.**" start={1258} size={g.L ? 48 : 52} />
       </div>
+    </AbsoluteFill>
+  );
+}
+
+/**
+ * 1. Problem, paced like the voiceover: "Plants dry out … unnoticed." — pause —
+ * "Which zone? … Checked when?" — a beat — then the rest of the video.
+ */
+function Intro({ layout }: { layout: Layout }) {
+  const f = useCurrentFrame();
+  const { width: W, height: H } = useVideoConfig();
+  const g = geo(layout, W, H);
+  if (f > 200) return null;
+  return (
+    <AbsoluteFill style={{ fontFamily: FONT }}>
+      <Mint op={keys(f, [0, 8], [0, 1])} />
+      <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', padding: 80 }}>
+        <div style={{ display: 'grid', width: '100%' }}>
+          <div style={{ gridArea: '1 / 1' }}>
+            <WordPop
+              text={g.L ? 'Plants dry out +16 **unnoticed.**' : 'Plants dry out|+16 **unnoticed.**'}
+              start={8}
+              exit={86}
+              size={g.big}
+            />
+          </div>
+          <div style={{ gridArea: '1 / 1' }}>
+            <WordPop
+              text={g.L ? 'Which zone? +14 **Checked when?**' : 'Which zone?|+14 **Checked when?**'}
+              start={104}
+              exit={164}
+              size={g.big}
+            />
+          </div>
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+}
+
+export function Explainer({ layout }: { layout: Layout }) {
+  return (
+    <AbsoluteFill style={{ backgroundColor: C.white }}>
+      <Intro layout={layout} />
+      <Sequence from={INTRO_EXTRA} durationInFrames={TOTAL_FRAMES - INTRO_EXTRA} layout="none">
+        <AbsoluteFill>
+          <Rest layout={layout} />
+        </AbsoluteFill>
+      </Sequence>
     </AbsoluteFill>
   );
 }

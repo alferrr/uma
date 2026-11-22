@@ -6,7 +6,7 @@ import { C, FONT } from '../theme';
 const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 
 type Props = {
-  /** `**bold green**` words, `|` for a line break. */
+  /** `**bold green**` words, `|` for a line break, `+N` for an N-frame pause before the next word. */
   text: string;
   start: number;
   exit?: number;
@@ -23,9 +23,14 @@ type Props = {
  */
 export function WordPop({ text, start, exit, size, stagger = 4, align = 'center' }: Props) {
   const f = useCurrentFrame();
-  const tokens: { w: string; strong: boolean }[] = [];
+  const tokens: { w: string; strong: boolean; delay: number }[] = [];
+  let pause = 0;
   let strong = false;
   for (const raw of text.replace(/\|/g, ' | ').split(/\s+/).filter(Boolean)) {
+    if (/^\+\d+$/.test(raw)) {
+      pause += Number(raw.slice(1));
+      continue;
+    }
     let w = raw;
     if (w.startsWith('**')) {
       strong = true;
@@ -33,12 +38,12 @@ export function WordPop({ text, start, exit, size, stagger = 4, align = 'center'
     }
     const closes = w.endsWith('**');
     if (closes) w = w.slice(0, -2);
-    tokens.push({ w, strong });
+    tokens.push({ w, strong, delay: pause });
     if (closes) strong = false;
   }
 
   // One non-wrapping row per line: words oversize as they pop in, and must never reflow onto a new line.
-  const lines: { w: string; strong: boolean; k: number }[][] = [[]];
+  const lines: { w: string; strong: boolean; delay: number; k: number }[][] = [[]];
   let n = 0;
   for (const t of tokens) {
     if (t.w === '|') lines.push([]);
@@ -59,8 +64,8 @@ export function WordPop({ text, start, exit, size, stagger = 4, align = 'center'
             whiteSpace: 'nowrap',
           }}
         >
-          {line.map(({ w, strong: s, k }) => {
-            const t = f - (start + k * stagger);
+          {line.map(({ w, strong: s, k, delay }) => {
+            const t = f - (start + k * stagger + delay);
             if (t < 0) return null;
             const scale = interpolate(t, [0, 6, 13], [0.15, 1.32, 1], {
               easing: easeOut,
