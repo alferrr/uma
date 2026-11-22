@@ -83,3 +83,37 @@ export function WifiIcon({ size = 16, color = '#6E6E6A' }: IconProps) {
     </Svg>
   );
 }
+
+type StrokeIconProps = IconProps & { d: string };
+
+function StrokeIcon({ d, size = 20, color = '#141414', strokeWidth = 1.8 }: StrokeIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d={d} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+export const CheckIcon = (p: IconProps) => <StrokeIcon {...p} d="M5 12.5l4.5 4.5L19 7.5" />;
+export const DropIcon = (p: IconProps) => (
+  <StrokeIcon {...p} d="M12 3.5c3.6 4.3 5.5 7.4 5.5 10a5.5 5.5 0 0 1-11 0c0-2.6 1.9-5.7 5.5-10Z" />
+);
+export const WarningIcon = (p: IconProps) => (
+  <StrokeIcon {...p} d="M12 4 2.8 19.5h18.4L12 4ZM12 10v4.5M12 17.2v.1" />
+);
+export const QuestionIcon = (p: IconProps) => (
+  <StrokeIcon {...p} d="M9.2 9a2.9 2.9 0 1 1 4 2.7c-.8.4-1.2 1-1.2 1.8v.5M12 17.2v.1M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18Z" />
+);
+export const ClockIcon = (p: IconProps) => <StrokeIcon {...p} d="M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18Z" />;
+export const SproutIcon = (p: IconProps) => (
+  <StrokeIcon {...p} d="M12 20v-8M12 12c-4 0-6-2.2-6-5.8 4 0 6 2.2 6 5.8ZM12 10c0-3.6 2-5.8 6-5.8 0 3.6-2 5.8-6 5.8Z" />
+);
+export const SearchIcon = (p: IconProps) => <StrokeIcon {...p} d="M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14ZM16.5 16.5 20 20" />;
+export const PinIcon = (p: IconProps) => (
+  <StrokeIcon {...p} d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11ZM12 12.3a2.3 2.3 0 1 0 0-4.6 2.3 2.3 0 0 0 0 4.6Z" />
+);
+export const ArrowUpRight = (p: IconProps) => <StrokeIcon {...p} d="M7 17 17 7M9 7h8v8" />;
+export const ChevronRight = (p: IconProps) => <StrokeIcon {...p} d="M9 5l7 7-7 7" />;
+export const PlusIcon = (p: IconProps) => <StrokeIcon {...p} d="M12 5v14M5 12h14" />;
+export const MinusIcon = (p: IconProps) => <StrokeIcon {...p} d="M5 12h14" />;
+export const ChevronDown = (p: IconProps) => <StrokeIcon {...p} d="M6 9l6 6 6-6" />;
