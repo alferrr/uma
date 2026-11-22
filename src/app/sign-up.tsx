@@ -8,10 +8,10 @@ import { AuthLayout } from '@/components/AuthLayout';
 import { ChevronLeft } from '@/components/icons';
 import { PillButton } from '@/components/PillButton';
 import { TextField, type TextFieldHandle } from '@/components/TextField';
-import { isEmailOrPhone, signUp, type Role } from '@/lib/mockAuth';
+import { isEmailOrPhone, signUp, type Role } from '@/lib/auth';
 import { colors, fonts } from '@/theme';
 
-type Field = 'name' | 'contact' | 'password' | 'confirm';
+type Field = 'name' | 'contact' | 'password' | 'confirm' | 'form';
 type Errors = Partial<Record<Field, string>>;
 
 /** Screen 3 · Sign up */
@@ -41,6 +41,8 @@ export default function SignUp() {
     try {
       await signUp({ name: name.trim(), contact: contact.trim(), role }, password);
       router.replace('/home');
+    } catch (e) {
+      setErrors({ form: e instanceof Error ? e.message : 'Could not create account. Try again.' });
     } finally {
       setLoading(false);
     }
@@ -146,6 +148,11 @@ export default function SignUp() {
         />
       </View>
 
+      {!!errors.form && (
+        <Text style={styles.formError} accessibilityLiveRegion="polite">
+          {errors.form}
+        </Text>
+      )}
       <PillButton label="Create account" onPress={submit} loading={loading} />
     </AuthLayout>
   );
@@ -200,6 +207,7 @@ const styles = StyleSheet.create({
   },
   titleStrong: { fontFamily: fonts.bold },
   fields: { gap: 14 },
+  formError: { fontFamily: fonts.regular, fontSize: 14, color: colors.danger, marginBottom: 12 },
   label: {
     marginTop: 22,
     marginBottom: 12,

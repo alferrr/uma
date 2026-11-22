@@ -8,10 +8,10 @@ import { AuthLayout } from '@/components/AuthLayout';
 import { LeafLogo, WifiIcon } from '@/components/icons';
 import { PillButton } from '@/components/PillButton';
 import { TextField, type TextFieldHandle } from '@/components/TextField';
-import { isEmailOrPhone, signIn } from '@/lib/mockAuth';
+import { isEmailOrPhone, signIn } from '@/lib/auth';
 import { colors, fonts } from '@/theme';
 
-type Errors = { contact?: string; password?: string };
+type Errors = { contact?: string; password?: string; form?: string };
 
 /** Screen 2 · Sign in */
 export default function SignIn() {
@@ -32,6 +32,8 @@ export default function SignIn() {
     try {
       await signIn(contact.trim(), password);
       router.replace('/home');
+    } catch (e) {
+      setErrors({ form: e instanceof Error ? e.message : 'Could not sign in. Try again.' });
     } finally {
       setLoading(false);
     }
@@ -101,6 +103,11 @@ export default function SignIn() {
         <Text style={styles.forgotText}>Forgot password?</Text>
       </Pressable>
 
+      {!!errors.form && (
+        <Text style={styles.formError} accessibilityLiveRegion="polite">
+          {errors.form}
+        </Text>
+      )}
       <PillButton label="Sign in" onPress={submit} loading={loading} />
 
       <View style={styles.note}>
@@ -122,6 +129,7 @@ const styles = StyleSheet.create({
   titleStrong: { fontFamily: fonts.bold },
   heading: { fontFamily: fonts.medium, fontSize: 24, color: colors.text, marginBottom: 18 },
   fields: { gap: 16 },
+  formError: { fontFamily: fonts.regular, fontSize: 14, color: colors.danger, marginBottom: 12 },
   forgot: { alignSelf: 'flex-end', marginTop: 16, marginBottom: 18 },
   forgotText: { fontFamily: fonts.regular, fontSize: 15, color: colors.muted },
   note: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 18, paddingLeft: 4 },

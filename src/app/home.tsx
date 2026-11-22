@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LeafLogo } from '@/components/icons';
 import { PillButton } from '@/components/PillButton';
-import { getUser, signOut } from '@/lib/mockAuth';
+import { getUser, signOut } from '@/lib/auth';
 import { colors, fonts } from '@/theme';
 
 /**
@@ -28,8 +28,8 @@ export default function HomePlaceholder() {
       <View style={styles.cta}>
         <PillButton
           label="Sign out"
-          onPress={() => {
-            signOut();
+          onPress={async () => {
+            await signOut();
             router.replace('/');
           }}
         />
