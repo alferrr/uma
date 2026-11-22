@@ -4,20 +4,28 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CropTile, GreenStripes, ZoneAerial } from '@/components/art';
-import { ChevronLeft, DropIcon, HistoryIcon, PencilIcon, TrashIcon } from '@/components/icons';
+import {
+  ChevronLeft,
+  DropIcon,
+  HistoryIcon,
+  PencilIcon,
+  QrIcon,
+  TrashIcon,
+} from '@/components/icons';
 import { IconButton } from '@/components/IconButton';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { StatusIcon } from '@/components/status';
-import { useCurrentFarm, useZone } from '@/lib/db';
+import { useCurrentFarm } from '@/lib/db';
 import { canManageFarm, removeZone } from '@/lib/farms';
 import { useT } from '@/lib/i18n';
+import { useZoneById } from '@/lib/useZoneById';
 import { toneFor } from '@/lib/zones';
 import { colors, fonts, statusColors } from '@/theme';
 
 /** Screen 7 · Zone details */
 export default function ZoneDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const zone = useZone(id);
+  const zone = useZoneById(id);
   const farm = useCurrentFarm();
   const canDelete = canManageFarm(farm);
   const insets = useSafeAreaInsets();
@@ -121,6 +129,12 @@ export default function ZoneDetails() {
             label={t.history}
             color={colors.green}
             onPress={() => router.push(`/history/${zone.id}`)}
+          />
+          <Action
+            icon={<QrIcon size={18} color={colors.green} />}
+            label={t.qrCode}
+            color={colors.green}
+            onPress={() => router.push(`/qr/${zone.id}`)}
           />
           {canDelete && (
             <Action
@@ -248,7 +262,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.3)',
   },
   badgeText: { fontFamily: fonts.regular, fontSize: 15, color: colors.white },
-  actions: { flexDirection: 'row', justifyContent: 'space-around' },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: 14 },
   action: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingHorizontal: 6 },
   actionText: { fontFamily: fonts.medium, fontSize: 14 },
   missing: { flex: 1, padding: 24, gap: 20, backgroundColor: colors.bg },
