@@ -52,6 +52,6 @@ assets from the reference are used.
 - **Focus-pull list**: zone pills cropped from the real map rise in, the others blur, a pointer
   taps one, and that pill grows into the full map.
 - **CTA**: green panel, pill collapses into its arrow, the arrow circle grows into white.
-- **End**: a dot draws into the logo ring, "Uma" types in, then the tagline and a PROTOTYPE tag.
+- **End**: a dot draws into the logo ring, "Uma" types in, then the tagline.
 - Mint wash only behind the type scenes, like the reference; the rest is white. Uma tokens:
   Outfit, green `#16923F`, orange `#F7931E` for the highlight ring and count-up only.

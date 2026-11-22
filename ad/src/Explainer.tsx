@@ -87,7 +87,13 @@ function pill(g: G, i: number, f: number) {
 function poses(g: G): Pose[] {
   const offBelow = { cy: g.H + g.phone.h / 2 + 80 };
   const z = pill(g, FOCUS, 806);
-  const small = { cx: g.W * 0.47, cy: g.H * (g.L ? 0.55 : 0.6), w: g.L ? 420 : 460, h: ((g.L ? 420 : 460) * ZONE_CARD.h) / ZONE_CARD.w, rot: -14 };
+  const small = {
+    cx: g.W * 0.47,
+    cy: g.H * (g.L ? 0.55 : 0.6),
+    w: g.L ? 420 : 460,
+    h: ((g.L ? 420 : 460) * ZONE_CARD.h) / ZONE_CARD.w,
+    rot: -14,
+  };
   return [
     phonePose(g, 210, 'scan.png', { ...offBelow, op: 1 }),
     phonePose(g, 246, 'scan.png'),
@@ -105,10 +111,37 @@ function poses(g: G): Pose[] {
     phonePose(g, 640, 'checkin.png'),
     phonePose(g, 654, 'saved.png'),
     phonePose(g, 708, 'saved.png'),
-    phonePose(g, 726, 'saved.png', { w: g.phone.w * 0.7, h: g.phone.h * 0.7, cy: g.phone.cy + 80, op: 0 }),
+    phonePose(g, 726, 'saved.png', {
+      w: g.phone.w * 0.7,
+      h: g.phone.h * 0.7,
+      cy: g.phone.cy + 80,
+      op: 0,
+    }),
     // Hand-off from the focus-pull list: the tapped pill *is* the map, cropped.
-    { f: 805, src: 'map.png', cx: z.cx, cy: z.cy, w: z.w * 1.06, h: z.h * 1.06, crop: TAGS[FOCUS]!, r: (z.h * 1.06) / 2, bezel: 0, op: 0 },
-    { f: 806, src: 'map.png', cx: z.cx, cy: z.cy, w: z.w * 1.06, h: z.h * 1.06, crop: TAGS[FOCUS]!, r: (z.h * 1.06) / 2, bezel: 0, op: 1 },
+    {
+      f: 805,
+      src: 'map.png',
+      cx: z.cx,
+      cy: z.cy,
+      w: z.w * 1.06,
+      h: z.h * 1.06,
+      crop: TAGS[FOCUS]!,
+      r: (z.h * 1.06) / 2,
+      bezel: 0,
+      op: 0,
+    },
+    {
+      f: 806,
+      src: 'map.png',
+      cx: z.cx,
+      cy: z.cy,
+      w: z.w * 1.06,
+      h: z.h * 1.06,
+      crop: TAGS[FOCUS]!,
+      r: (z.h * 1.06) / 2,
+      bezel: 0,
+      op: 1,
+    },
     phonePose(g, 846, 'map.png'),
     phonePose(g, 914, 'map.png'),
     phonePose(g, 928, 'profile-pending.png'),
@@ -149,23 +182,56 @@ function Glow({ g, op }: { g: G; op: number }) {
         height: d,
         borderRadius: '50%',
         opacity: op,
-        background: 'radial-gradient(circle, rgba(22,146,63,0.42) 0%, rgba(22,146,63,0.16) 38%, rgba(22,146,63,0) 68%)',
+        background:
+          'radial-gradient(circle, rgba(22,146,63,0.42) 0%, rgba(22,146,63,0.16) 38%, rgba(22,146,63,0) 68%)',
       }}
     />
   );
 }
 
 /** Two short labels either side of the phone (landscape) or above it (portrait). */
-function Labels({ g, left, right, start, exit }: { g: G; left: string; right: string; start: number; exit: number }) {
+function Labels({
+  g,
+  left,
+  right,
+  start,
+  exit,
+}: {
+  g: G;
+  left: string;
+  right: string;
+  start: number;
+  exit: number;
+}) {
   if (g.L) {
     const half = g.phone.w / 2 + g.labelGap;
     return (
       <>
-        <div style={{ position: 'absolute', right: g.W - (g.phone.cx - half), top: g.phone.cy - 120, width: 640 }}>
+        <div
+          style={{
+            position: 'absolute',
+            right: g.W - (g.phone.cx - half),
+            top: g.phone.cy - 120,
+            width: 640,
+          }}
+        >
           <WordPop text={left} start={start} exit={exit} size={g.text} align="right" />
         </div>
-        <div style={{ position: 'absolute', left: g.phone.cx + half, top: g.phone.cy - 120, width: 640 }}>
-          <WordPop text={`**${right}**`} start={start + 8} exit={exit + 4} size={g.text} align="left" />
+        <div
+          style={{
+            position: 'absolute',
+            left: g.phone.cx + half,
+            top: g.phone.cy - 120,
+            width: 640,
+          }}
+        >
+          <WordPop
+            text={`**${right}**`}
+            start={start + 8}
+            exit={exit + 4}
+            size={g.text}
+            align="left"
+          />
         </div>
       </>
     );
@@ -193,7 +259,13 @@ function Pointer({ x, y, press }: { x: number; y: number; press: number }) {
       width={58}
       height={58}
       viewBox="0 0 24 24"
-      style={{ position: 'absolute', left: x, top: y, transform: `scale(${1 - press * 0.18})`, transformOrigin: '4px 3px' }}
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        transform: `scale(${1 - press * 0.18})`,
+        transformOrigin: '4px 3px',
+      }}
     >
       <path
         d="M4 3l14.5 7.2-6.3 1.6 3.9 7.2-2.7 1.4-3.9-7.2L5 17.4z"
@@ -216,7 +288,7 @@ function Whip({ dx, v, children }: { dx: number; v: number; children: ReactNode 
           key={i}
           style={{
             transform: `translateX(${dx + (i * v) / 2.2}px)`,
-            opacity: n === 1 ? 1 : (i === 0 ? 0.5 : 0.5 / (i + 1)),
+            opacity: n === 1 ? 1 : i === 0 ? 0.5 : 0.5 / (i + 1),
           }}
         >
           {children}
@@ -234,12 +306,23 @@ export function Explainer({ layout }: { layout: Layout }) {
   const g = geo(layout, W, H);
 
   // Background washes.
-  const mint = Math.min(keys(f, [0, 8, 196, 214], [0, 1, 1, 0]), 1) + keys(f, [1044, 1058, 1136, 1148], [0, 1, 1, 0]);
-  const glow = keys(f, [210, 244, 384, 410, 604, 632, 708, 724, 806, 840, 1032, 1050], [0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0]);
+  const mint =
+    Math.min(keys(f, [0, 8, 196, 214], [0, 1, 1, 0]), 1) +
+    keys(f, [1044, 1058, 1136, 1148], [0, 1, 1, 0]);
+  const glow = keys(
+    f,
+    [210, 244, 384, 410, 604, 632, 708, 724, 806, 840, 1032, 1050],
+    [0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+  );
 
   // Meet Uma: hold, slow push, then whip-pan left.
   const push = keys(f, [168, 200], [1, 1.12]);
-  const whip = (t: number) => interpolate(t, [198, 216], [0, -W * 1.35], { easing: easeIn, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const whip = (t: number) =>
+    interpolate(t, [198, 216], [0, -W * 1.35], {
+      easing: easeIn,
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
+    });
   const meetSize = g.L ? 128 : 104;
 
   return (
@@ -251,10 +334,20 @@ export function Explainer({ layout }: { layout: Layout }) {
         <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', padding: 80 }}>
           <div style={{ display: 'grid', width: '100%' }}>
             <div style={{ gridArea: '1 / 1' }}>
-              <WordPop text={g.L ? 'Plants dry out **unnoticed.**' : 'Plants dry out|**unnoticed.**'} start={6} exit={50} size={g.big} />
+              <WordPop
+                text={g.L ? 'Plants dry out **unnoticed.**' : 'Plants dry out|**unnoticed.**'}
+                start={6}
+                exit={50}
+                size={g.big}
+              />
             </div>
             <div style={{ gridArea: '1 / 1' }}>
-              <WordPop text={g.L ? 'Which zone? **Checked when?**' : 'Which zone?|**Checked when?**'} start={62} exit={110} size={g.big} />
+              <WordPop
+                text={g.L ? 'Which zone? **Checked when?**' : 'Which zone?|**Checked when?**'}
+                start={62}
+                exit={110}
+                size={g.big}
+              />
             </div>
           </div>
         </AbsoluteFill>
@@ -263,11 +356,27 @@ export function Explainer({ layout }: { layout: Layout }) {
       {/* 2. Meet Uma */}
       {f >= 116 && f < 220 && (
         <Whip dx={whip(f)} v={whip(f) - whip(f - 1)}>
-          <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', transform: `scale(${push})` }}>
+          <AbsoluteFill
+            style={{ alignItems: 'center', justifyContent: 'center', transform: `scale(${push})` }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: meetSize * 0.26 }}>
-              <TypeIn text="Meet" start={120} size={meetSize} color={C.text} from={C.green} every={3} />
+              <TypeIn
+                text="Meet"
+                start={120}
+                size={meetSize}
+                color={C.text}
+                from={C.green}
+                every={3}
+              />
               <Logo size={meetSize * 1.02} start={134} />
-              <TypeIn text="Uma" start={148} size={meetSize} color={C.green} from="#C9C9C4" every={3} />
+              <TypeIn
+                text="Uma"
+                start={148}
+                size={meetSize}
+                color={C.green}
+                from="#C9C9C4"
+                every={3}
+              />
             </div>
           </AbsoluteFill>
         </Whip>
@@ -284,16 +393,28 @@ export function Explainer({ layout }: { layout: Layout }) {
             {src === 'zone.png' && <Ring rect={MOIST_TXT} start={428} end={486} radius={30} />}
             {src === 'checkin.png' && <Ring rect={JUST_RIGHT} start={542} end={598} radius={60} />}
             {src === 'map.png' && <Ring rect={MAP_SUMMARY} start={860} end={908} radius={90} />}
-            {src.startsWith('profile') && <Ring rect={PROFILE_SYNC} start={936} end={1026} radius={70} />}
+            {src.startsWith('profile') && (
+              <Ring rect={PROFILE_SYNC} start={936} end={1026} radius={70} />
+            )}
           </>
         )}
       </Screen>
 
       <Labels g={g} left="Scan the" right="QR code." start={236} exit={316} />
       <Labels g={g} left="The zone" right="opens." start={334} exit={378} />
-      <Caption g={g} text={g.L ? 'See its **soil moisture.**' : 'See its|**soil moisture.**'} start={420} exit={486} />
+      <Caption
+        g={g}
+        text={g.L ? 'See its **soil moisture.**' : 'See its|**soil moisture.**'}
+        start={420}
+        exit={486}
+      />
       <Count g={g} />
-      <Caption g={g} text={g.L ? 'Moisture already **filled in.**' : 'Moisture already|**filled in.**'} start={532} exit={598} />
+      <Caption
+        g={g}
+        text={g.L ? 'Moisture already **filled in.**' : 'Moisture already|**filled in.**'}
+        start={532}
+        exit={598}
+      />
       <Labels g={g} left="Saved in a" right="few taps." start={646} exit={704} />
       <FocusList g={g} />
       <Labels g={g} left="The whole farm" right="at a glance." start={848} exit={910} />
@@ -359,7 +480,11 @@ function QrCard({ g }: { g: G }) {
 /** Thick green stroke sweeping across, carrying the card (the reference's swoosh). */
 function Swoosh({ g }: { g: G }) {
   const f = useCurrentFrame();
-  const p = interpolate(f, [488, 534], [0, 1], { easing: easeInOut, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const p = interpolate(f, [488, 534], [0, 1], {
+    easing: easeInOut,
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
   if (p <= 0 || p >= 1) return null;
   const { W, H } = g;
   const d = g.L
@@ -387,7 +512,13 @@ function Count({ g }: { g: G }) {
   const f = useCurrentFrame();
   const t = rise(f, 436, 14) * fall(f, 484, 10);
   if (t <= 0) return null;
-  const n = Math.round(interpolate(f, [438, 468], [0, 54], { easing: easeOut, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
+  const n = Math.round(
+    interpolate(f, [438, 468], [0, 54], {
+      easing: easeOut,
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
+    }),
+  );
   const cardH = (g.card.w * ZONE_CARD.h) / ZONE_CARD.w;
   return (
     <div
@@ -422,21 +553,50 @@ function FocusList({ g }: { g: G }) {
   const f = useCurrentFrame();
   if (f < 718 || f > 820) return null;
   const focus = rise(f, 770, 14);
-  const press = interpolate(f, [794, 798, 804], [0, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const press = interpolate(f, [794, 798, 804], [0, 1, 0], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
   const z = pill(g, FOCUS, f);
   const cur = {
-    x: interpolate(f, [772, 792], [z.cx + z.w, z.cx + z.w * 0.32], { easing: easeOut, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
-    y: interpolate(f, [772, 792], [z.cy + 220, z.cy - 6], { easing: easeOut, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+    x: interpolate(f, [772, 792], [z.cx + z.w, z.cx + z.w * 0.32], {
+      easing: easeOut,
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
+    }),
+    y: interpolate(f, [772, 792], [z.cy + 220, z.cy - 6], {
+      easing: easeOut,
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
+    }),
   };
   return (
     <>
       {g.L ? (
-        <div style={{ position: 'absolute', left: 150, top: 380, width: 640 }}>
-          <WordPop text="Spot the zone|**that needs water.**" start={728} exit={800} size={g.text} align="left" />
+        <div
+          style={{
+            position: 'absolute',
+            left: 130,
+            top: pill(g, 1, f).cy + pill(g, 1, f).h / 2 + g.list.gap / 2 - g.text * 1.15,
+            width: 800,
+          }}
+        >
+          <WordPop
+            text="Spot the zone|**that needs water.**"
+            start={728}
+            exit={800}
+            size={g.text}
+            align="left"
+          />
         </div>
       ) : (
         <div style={{ position: 'absolute', left: 60, right: 60, top: 400 }}>
-          <WordPop text="Spot the zone|**that needs water.**" start={728} exit={800} size={g.text} />
+          <WordPop
+            text="Spot the zone|**that needs water.**"
+            start={728}
+            exit={800}
+            size={g.text}
+          />
         </div>
       )}
       {TAGS.map((crop, i) => {
@@ -474,16 +634,35 @@ function Cta({ g }: { g: G }) {
   const f = useCurrentFrame();
   if (f < 1140 || f > 1226) return null;
   const { W, H } = g;
-  const reveal = interpolate(f, [1140, 1158], [0, 1], { easing: easeInOut, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const reveal = interpolate(f, [1140, 1158], [0, 1], {
+    easing: easeInOut,
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
   const pillIn = rise(f, 1154, 14);
-  const collapse = interpolate(f, [1188, 1202], [0, 1], { easing: easeInOut, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const grow = interpolate(f, [1204, 1222], [0, 1], { easing: easeIn, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const collapse = interpolate(f, [1188, 1202], [0, 1], {
+    easing: easeInOut,
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+  const grow = interpolate(f, [1204, 1222], [0, 1], {
+    easing: easeIn,
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
   const h = g.L ? 104 : 100;
   const full = g.L ? 600 : 620;
   const w = full + (h - full) * collapse;
   const cover = (Math.hypot(W, H) / h) * 1.15;
   return (
-    <AbsoluteFill style={{ clipPath: `circle(${reveal * 75}% at 50% 50%)`, background: C.green, alignItems: 'center', justifyContent: 'center' }}>
+    <AbsoluteFill
+      style={{
+        clipPath: `circle(${reveal * 75}% at 50% 50%)`,
+        background: C.green,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       <div
         style={{
           width: w,
@@ -526,7 +705,14 @@ function Cta({ g }: { g: G }) {
           }}
         >
           <svg width={h * 0.4} height={h * 0.4} viewBox="0 0 24 24">
-            <path d="M4 12h15M13 6l6 6-6 6" fill="none" stroke="#fff" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M4 12h15M13 6l6 6-6 6"
+              fill="none"
+              stroke="#fff"
+              strokeWidth={2.6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
       </div>
@@ -536,33 +722,24 @@ function Cta({ g }: { g: G }) {
 
 function End({ g }: { g: G }) {
   const f = useCurrentFrame();
-  const tag = rise(f, 1276, 14);
   const logo = g.L ? 170 : 190;
   return (
-    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+    <AbsoluteFill
+      style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}
+    >
       <Logo size={logo} start={1228} />
       <div style={{ marginTop: 28 }}>
-        <TypeIn text="Uma" start={1246} size={g.L ? 120 : 128} color={C.text} from="#C9C9C4" every={3} />
+        <TypeIn
+          text="Uma"
+          start={1246}
+          size={g.L ? 120 : 128}
+          color={C.text}
+          from="#C9C9C4"
+          every={3}
+        />
       </div>
       <div style={{ marginTop: 14, width: g.W - 120 }}>
         <WordPop text="Watch every plant. **Lose less.**" start={1258} size={g.L ? 48 : 52} />
-      </div>
-      <div
-        style={{
-          marginTop: 30,
-          padding: '10px 26px',
-          borderRadius: 999,
-          background: C.panel,
-          color: C.muted,
-          fontSize: 26,
-          fontWeight: 500,
-          letterSpacing: 1.5,
-          textTransform: 'uppercase',
-          opacity: tag,
-          transform: `translateY(${(1 - tag) * 16}px)`,
-        }}
-      >
-        Prototype
       </div>
     </AbsoluteFill>
   );

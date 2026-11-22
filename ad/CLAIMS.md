@@ -1,7 +1,6 @@
 # Claims in the Uma explainer
 
-Every line shown on screen, and what in the app backs it. The app is a **prototype**; the ad
-says so on the end card.
+Every line shown on screen, and what in the app backs it. The app is a prototype; the sensor reading shown is labelled as sample data.
 
 | On-screen line | Backed by | Notes |
 |---|---|---|
@@ -19,7 +18,6 @@ says so on the end card.
 | "Syncs when back online." | `src/lib/sync.ts`; Profile "All records synced" | Both Profile states are real screenshots. |
 | "In three languages." + "Cebuano · English · Tagalog" | `src/lib/i18n.ts` | Only English is shown on screen, as requested. |
 | "Watch every plant" (CTA pill), "Watch every plant. Lose less." | The app's own Welcome headline | |
-| "Prototype" | Project status in `product.md` | |
 
 ## Not claimed
 

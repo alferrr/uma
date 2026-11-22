@@ -37,63 +37,73 @@ export function WordPop({ text, start, exit, size, stagger = 4, align = 'center'
     if (closes) strong = false;
   }
 
+  // One non-wrapping row per line: words oversize as they pop in, and must never reflow onto a new line.
+  const lines: { w: string; strong: boolean; k: number }[][] = [[]];
   let n = 0;
+  for (const t of tokens) {
+    if (t.w === '|') lines.push([]);
+    else lines[lines.length - 1]!.push({ ...t, k: n++ });
+  }
+  const justify = align === 'center' ? 'center' : align === 'left' ? 'flex-start' : 'flex-end';
   return (
-    <div
-      style={{
-        fontFamily: FONT,
-        fontWeight: 600,
-        letterSpacing: -size * 0.015,
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'baseline',
-        justifyContent: align === 'center' ? 'center' : align === 'left' ? 'flex-start' : 'flex-end',
-        textAlign: align,
-        lineHeight: 1.15,
-        height: size * 1.15 * (text.split('|').length),
-        alignContent: 'center',
-      }}
-    >
-      {tokens.map(({ w, strong: s }, i) => {
-        if (w === '|') return <div key={i} style={{ flexBasis: '100%', height: 0 }} />;
-        const k = n++;
-        const t = f - (start + k * stagger);
-        if (t < 0) return null;
-        const scale = interpolate(t, [0, 6, 13], [0.15, 1.32, 1], { easing: easeOut, ...clamp });
-        const lift = interpolate(t, [0, 6, 13], [0.1, -0.28, 0], { easing: easeOut, ...clamp });
-        const settled = interpolate(t, [5, 13], [0, 1], clamp);
-        let color = s ? C.green : interpolateColors(settled, [0, 1], [C.green, C.text]);
-        let opacity = interpolate(t, [0, 3], [0, 1], clamp);
-        let dx = 0;
-        let dy = lift * size;
-        let shrink = 1;
-        if (exit !== undefined) {
-          const e = interpolate(f, [exit + k * 3, exit + k * 3 + 10], [0, 1], { easing: easeIn, ...clamp });
-          color = interpolateColors(e, [0, 1], [color, '#C9C9C4']);
-          opacity *= 1 - interpolate(e, [0.45, 1], [0, 1], clamp);
-          dx = -e * size * 0.35;
-          dy -= e * size * 0.3;
-          shrink = 1 - e * 0.3;
-        }
-        return (
-          <span
-            key={i}
-            style={{
-              fontSize: size * scale,
-              fontWeight: s ? 700 : 500,
-              color,
-              opacity,
-              marginRight: size * 0.24 * Math.min(1, scale),
-              display: 'inline-block',
-              transform: `translate(${dx}px, ${dy}px) scale(${shrink})`,
-              transformOrigin: 'left bottom',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {w}
-          </span>
-        );
-      })}
+    <div style={{ fontFamily: FONT, letterSpacing: -size * 0.015, lineHeight: 1.15 }}>
+      {lines.map((line, li) => (
+        <div
+          key={li}
+          style={{
+            display: 'flex',
+            flexWrap: 'nowrap',
+            alignItems: 'baseline',
+            justifyContent: justify,
+            height: size * 1.32,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {line.map(({ w, strong: s, k }) => {
+            const t = f - (start + k * stagger);
+            if (t < 0) return null;
+            const scale = interpolate(t, [0, 6, 13], [0.15, 1.32, 1], {
+              easing: easeOut,
+              ...clamp,
+            });
+            const lift = interpolate(t, [0, 6, 13], [0.1, -0.28, 0], { easing: easeOut, ...clamp });
+            const settled = interpolate(t, [5, 13], [0, 1], clamp);
+            let color = s ? C.green : interpolateColors(settled, [0, 1], [C.green, C.text]);
+            let opacity = interpolate(t, [0, 3], [0, 1], clamp);
+            let dx = 0;
+            let dy = lift * size;
+            let shrink = 1;
+            if (exit !== undefined) {
+              const e = interpolate(f, [exit + k * 3, exit + k * 3 + 10], [0, 1], {
+                easing: easeIn,
+                ...clamp,
+              });
+              color = interpolateColors(e, [0, 1], [color, '#C9C9C4']);
+              opacity *= 1 - interpolate(e, [0.45, 1], [0, 1], clamp);
+              dx = -e * size * 0.35;
+              dy -= e * size * 0.3;
+              shrink = 1 - e * 0.3;
+            }
+            return (
+              <span
+                key={k}
+                style={{
+                  fontSize: size * scale,
+                  fontWeight: s ? 700 : 500,
+                  color,
+                  opacity,
+                  marginRight: size * 0.24 * Math.min(1, scale),
+                  display: 'inline-block',
+                  transform: `translate(${dx}px, ${dy}px) scale(${shrink})`,
+                  transformOrigin: 'left bottom',
+                }}
+              >
+                {w}
+              </span>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }
@@ -118,7 +128,15 @@ export function TypeIn({
 }) {
   const f = useCurrentFrame();
   return (
-    <span style={{ fontFamily: FONT, fontSize: size, fontWeight: weight, letterSpacing: -size * 0.02, whiteSpace: 'nowrap' }}>
+    <span
+      style={{
+        fontFamily: FONT,
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: -size * 0.02,
+        whiteSpace: 'nowrap',
+      }}
+    >
       {text.split('').map((ch, i) => {
         const t = f - (start + i * every);
         const o = interpolate(t, [0, 4], [0, 1], clamp);
