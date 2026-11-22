@@ -19,7 +19,7 @@ import { useCurrentFarm } from '@/lib/db';
 import { canManageFarm, removeZone } from '@/lib/farms';
 import { useT } from '@/lib/i18n';
 import { useZoneById } from '@/lib/useZoneById';
-import { toneFor } from '@/lib/zones';
+import { moistureFromPercent, toneFor } from '@/lib/zones';
 import { colors, fonts, statusColors } from '@/theme';
 
 /** Screen 7 · Zone details */
@@ -105,11 +105,29 @@ export default function ZoneDetails() {
               {zone.lastCheckedBy ? ` · ${t.byName(zone.lastCheckedBy)}` : ''}
             </Text>
           </View>
-          {zone.moisture && (
-            <View style={styles.moisture}>
-              <DropIcon size={18} color={colors.green} />
-              <Text style={styles.moistureText}>{t.moisture[zone.moisture]}</Text>
+          {zone.reading ? (
+            // A sensor reading wins over the last finger test: it is newer and exact.
+            <View style={styles.reading}>
+              <View style={styles.moisture}>
+                <DropIcon size={18} color={colors.green} />
+                <Text style={styles.moistureText}>
+                  <Text style={styles.percent}>{Math.round(zone.reading.percent)}%</Text>{' '}
+                  {t.moisture[moistureFromPercent(zone.reading.percent)]}
+                </Text>
+              </View>
+              <Text style={styles.readingSource}>
+                {zone.reading.sample
+                  ? t.sampleData
+                  : `${t.sensor} · ${new Date(zone.reading.readAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+              </Text>
             </View>
+          ) : (
+            zone.moisture && (
+              <View style={styles.moisture}>
+                <DropIcon size={18} color={colors.green} />
+                <Text style={styles.moistureText}>{t.moisture[zone.moisture]}</Text>
+              </View>
+            )
           )}
         </View>
 
@@ -243,6 +261,9 @@ const styles = StyleSheet.create({
   last: { fontFamily: fonts.regular, fontSize: 14, color: colors.muted },
   moisture: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   moistureText: { fontFamily: fonts.regular, fontSize: 16, color: colors.text },
+  percent: { fontFamily: fonts.semibold },
+  reading: { alignItems: 'flex-end', gap: 2 },
+  readingSource: { fontFamily: fonts.regular, fontSize: 12, color: colors.muted },
   inner: {
     height: 200,
     borderRadius: 24,

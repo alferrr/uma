@@ -14,6 +14,7 @@ import {
   PlusIcon,
   SproutIcon,
   WarningIcon,
+  WifiIcon,
 } from '@/components/icons';
 import { IconButton } from '@/components/IconButton';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -22,7 +23,7 @@ import { addCheckIn, type CheckInStatus } from '@/lib/db';
 import { useT } from '@/lib/i18n';
 import { useZoneById } from '@/lib/useZoneById';
 import { syncNow } from '@/lib/sync';
-import type { Moisture } from '@/lib/zones';
+import { moistureFromPercent, type Moisture } from '@/lib/zones';
 import { colors, fonts, radius } from '@/theme';
 
 const STATUSES: { value: CheckInStatus; icon: (c: string) => ReactNode }[] = [
@@ -46,7 +47,11 @@ export default function CheckIn() {
 
   const [status, setStatus] = useState<CheckInStatus | null>(null);
   const [dead, setDead] = useState(1);
-  const [moisture, setMoisture] = useState<Moisture | null>(null);
+  // The sensor's latest reading fills in moisture; tapping a tile overrides it.
+  const sensorLevel = zone?.reading ? moistureFromPercent(zone.reading.percent) : null;
+  const [picked, setPicked] = useState<Moisture | null>(null);
+  const moisture = picked ?? sensorLevel;
+  const setMoisture = setPicked;
 
   if (!zone) return null;
 
@@ -61,7 +66,7 @@ export default function CheckIn() {
       status,
       dead_count: status === 'dead' ? dead : 0,
       moisture,
-      source: 'finger',
+      source: sensorLevel !== null && moisture === sensorLevel ? 'sensor' : 'finger',
     });
     syncNow(); // Upload now if there is signal; otherwise it waits on the phone.
     router.replace({
@@ -162,6 +167,15 @@ export default function CheckIn() {
 
           <View style={styles.moistureHead}>
             <Text style={styles.section}>{t.soilMoisture}</Text>
+            {zone.reading && (
+              <View style={styles.sensorNote}>
+                <WifiIcon size={14} color={colors.green} />
+                <Text style={styles.sensorText}>
+                  {zone.reading.sample ? t.sampleData : t.sensor} ·{' '}
+                  {Math.round(zone.reading.percent)}%
+                </Text>
+              </View>
+            )}
           </View>
           <View style={styles.tiles} accessibilityRole="radiogroup">
             {MOISTURES.map((m) => {
@@ -283,6 +297,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   section: { fontFamily: fonts.medium, fontSize: 22, color: colors.text },
+  sensorNote: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  sensorText: { fontFamily: fonts.regular, fontSize: 13, color: colors.green },
   tiles: { flexDirection: 'row', gap: 10 },
   tile: {
     flex: 1,
