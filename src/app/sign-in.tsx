@@ -9,6 +9,7 @@ import { LeafLogo, WifiIcon } from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { TextField, type TextFieldHandle } from '@/components/TextField';
 import { isEmailOrPhone, signIn } from '@/lib/auth';
+import { afterSignInRoute } from '@/lib/i18n';
 import { colors, fonts } from '@/theme';
 
 type Errors = { contact?: string; password?: string; form?: string };
@@ -31,7 +32,7 @@ export default function SignIn() {
     setLoading(true);
     try {
       await signIn(contact.trim(), password);
-      router.replace('/home');
+      router.replace(afterSignInRoute());
     } catch (e) {
       setErrors({ form: e instanceof Error ? e.message : 'Could not sign in. Try again.' });
     } finally {

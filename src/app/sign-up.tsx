@@ -9,6 +9,7 @@ import { ChevronLeft } from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { TextField, type TextFieldHandle } from '@/components/TextField';
 import { isEmailOrPhone, signUp, type Role } from '@/lib/auth';
+import { afterSignInRoute } from '@/lib/i18n';
 import { colors, fonts } from '@/theme';
 
 type Field = 'name' | 'contact' | 'password' | 'confirm' | 'form';
@@ -40,7 +41,7 @@ export default function SignUp() {
     setLoading(true);
     try {
       await signUp({ name: name.trim(), contact: contact.trim(), role }, password);
-      router.replace('/home');
+      router.replace(afterSignInRoute());
     } catch (e) {
       setErrors({ form: e instanceof Error ? e.message : 'Could not create account. Try again.' });
     } finally {
