@@ -14,7 +14,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CropTile, SunsetField } from '@/components/art';
 import {
-  ChevronDown,
   ChevronRight,
   DropIcon,
   PinIcon,
@@ -208,14 +207,19 @@ export default function Home() {
           <Pressable
             onPress={() => router.push('/farms')}
             accessibilityRole="button"
-            accessibilityLabel={`${t.farmsTitle}: ${farm.name}`}
-            style={({ pressed }) => [styles.farmPill, pressed && { opacity: 0.8 }]}
+            accessibilityLabel={`${t.youAreIn(farm.name)}. ${t.changeFarm}`}
+            style={({ pressed }) => [styles.farmBar, pressed && { opacity: 0.85 }]}
           >
-            <PinIcon size={18} color={colors.green} />
-            <Text style={styles.farmPillText} numberOfLines={1}>
-              {farm.name}
-            </Text>
-            <ChevronDown size={16} color={colors.muted} />
+            <View style={styles.farmIcon}>
+              <PinIcon size={20} color={colors.green} />
+            </View>
+            <View style={styles.farmText}>
+              <Text style={styles.youAreIn} numberOfLines={1}>
+                {t.youAreInPrefix} <Text style={styles.farmStrong}>{farm.name}</Text>
+              </Text>
+              <Text style={styles.changeFarm}>{t.changeFarm}</Text>
+            </View>
+            <ChevronRight size={16} color={colors.muted} />
           </Pressable>
         )}
 
@@ -357,20 +361,34 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green,
   },
   addZoneText: { fontFamily: fonts.medium, fontSize: 14, color: colors.white },
-  farmPill: {
+  farmBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 8,
-    marginLeft: 24,
-    marginBottom: 14,
-    height: 40,
-    paddingHorizontal: 14,
-    borderRadius: 20,
+    gap: 12,
+    marginHorizontal: 24,
+    marginBottom: 16,
+    padding: 10,
+    paddingRight: 16,
+    borderRadius: 28,
     backgroundColor: colors.surface,
-    maxWidth: '80%',
   },
-  farmPillText: { flexShrink: 1, fontFamily: fonts.medium, fontSize: 15, color: colors.text },
+  farmIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EAF5EC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  farmText: { flex: 1 },
+  youAreIn: { fontFamily: fonts.regular, fontSize: 16, color: colors.text },
+  farmStrong: { fontFamily: fonts.semibold },
+  changeFarm: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.green,
+    textDecorationLine: 'underline',
+  },
   emptyBox: { gap: 12, alignItems: 'stretch', paddingVertical: 10 },
   emptyHint: { textAlign: 'center', fontFamily: fonts.regular, fontSize: 14, color: colors.muted },
   seeAll: { flexDirection: 'row', alignItems: 'center', gap: 4 },
