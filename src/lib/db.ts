@@ -9,7 +9,7 @@ import 'expo-sqlite/localStorage/install';
 import { openDatabaseSync } from 'expo-sqlite';
 import { useSyncExternalStore } from 'react';
 
-import type { Moisture, Status, Zone } from './zones';
+import type { Moisture, SensorReading, Status, Zone } from './zones';
 
 export type CheckInStatus = Exclude<Status, 'not_checked'>;
 
@@ -46,6 +46,15 @@ export type FarmRow = {
 };
 
 export type MemberRow = { farm_id: string; user_id: string; name: string };
+
+/** A soil-moisture reading as stored on the phone (`sample` is 0 or 1). */
+export type ReadingRow = {
+  id: string;
+  zone_id: string;
+  percent: number;
+  read_at: string;
+  sample: number;
+};
 
 const db = openDatabaseSync('uma.db');
 
@@ -91,6 +100,14 @@ db.execSync(`
     row_label TEXT NOT NULL DEFAULT '',
     plant TEXT
   );
+  CREATE TABLE IF NOT EXISTS reading (
+    id TEXT PRIMARY KEY NOT NULL,
+    zone_id TEXT NOT NULL,
+    percent REAL NOT NULL,
+    read_at TEXT NOT NULL,
+    sample INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE INDEX IF NOT EXISTS reading_zone ON reading (zone_id, read_at);
   CREATE TABLE IF NOT EXISTS member (
     farm_id TEXT NOT NULL,
     user_id TEXT NOT NULL,
@@ -286,6 +303,50 @@ export function replaceMembers(rows: MemberRow[]) {
   emit();
 }
 
+/** Replace the local copy of recent sensor readings after a download. */
+export function replaceReadings(rows: ReadingRow[]) {
+  db.withTransactionSync(() => {
+    db.runSync('DELETE FROM reading');
+    for (const r of rows) {
+      db.runSync(
+        'INSERT OR REPLACE INTO reading (id, zone_id, percent, read_at, sample) VALUES (?, ?, ?, ?, ?)',
+        r.id,
+        r.zone_id,
+        r.percent,
+        r.read_at,
+        r.sample ? 1 : 0,
+      );
+    }
+  });
+  emit();
+}
+
+const toReading = (r: ReadingRow): SensorReading => ({
+  percent: r.percent,
+  readAt: r.read_at,
+  sample: !!r.sample,
+});
+
+const readingReaders = new Map<string, () => SensorReading[]>();
+/** A zone's latest readings (up to six), oldest first, for the hourly strip. */
+export function useReadings(zoneId: string | undefined) {
+  const key = zoneId ?? '';
+  let read = readingReaders.get(key);
+  if (!read) {
+    read = memo(() =>
+      db
+        .getAllSync<ReadingRow>(
+          'SELECT * FROM reading WHERE zone_id = ? ORDER BY read_at DESC LIMIT 6',
+          key,
+        )
+        .reverse()
+        .map(toReading),
+    );
+    readingReaders.set(key, read);
+  }
+  return useSyncExternalStore(subscribe, read);
+}
+
 export function removeMemberLocal(farmId: string, userId: string) {
   db.runSync('DELETE FROM member WHERE farm_id = ? AND user_id = ?', farmId, userId);
   emit();
@@ -305,6 +366,7 @@ export function upsertFarm(r: FarmRow) {
 export function deleteZoneLocal(id: string) {
   db.withTransactionSync(() => {
     db.runSync('DELETE FROM check_in WHERE zone_id = ?', id);
+    db.runSync('DELETE FROM reading WHERE zone_id = ?', id);
     db.runSync('DELETE FROM zone WHERE id = ?', id);
   });
   emit();
@@ -314,6 +376,7 @@ export function deleteZoneLocal(id: string) {
 export function deleteFarmLocal(id: string) {
   db.withTransactionSync(() => {
     db.runSync('DELETE FROM check_in WHERE zone_id IN (SELECT id FROM zone WHERE farm_id = ?)', id);
+    db.runSync('DELETE FROM reading WHERE zone_id IN (SELECT id FROM zone WHERE farm_id = ?)', id);
     db.runSync('DELETE FROM zone WHERE farm_id = ?', id);
     db.runSync('DELETE FROM member WHERE farm_id = ?', id);
     db.runSync('DELETE FROM farm WHERE id = ?', id);
@@ -333,6 +396,7 @@ export function clearServerCopies() {
     db.runSync('DELETE FROM zone');
     db.runSync('DELETE FROM farm');
     db.runSync('DELETE FROM member');
+    db.runSync('DELETE FROM reading');
     db.runSync('DELETE FROM check_in WHERE synced_at IS NOT NULL');
   });
   chosenFarmId = null;
@@ -354,6 +418,15 @@ export function setCurrentFarm(id: string) {
 
 function zonesOf(farmId: string): Zone[] {
   const latest = new Map(latestCheckIns().map((c) => [c.zone_id, c]));
+  const readings = new Map(
+    db
+      .getAllSync<ReadingRow>(
+        `SELECT r.* FROM reading r
+         JOIN (SELECT zone_id, MAX(read_at) AS t FROM reading GROUP BY zone_id) m
+           ON m.zone_id = r.zone_id AND m.t = r.read_at`,
+      )
+      .map((r) => [r.zone_id, toReading(r)]),
+  );
   return db
     .getAllSync<ZoneRow>('SELECT * FROM zone WHERE farm_id = ? ORDER BY code', farmId)
     .map((r) => {
@@ -368,6 +441,7 @@ function zonesOf(farmId: string): Zone[] {
         moisture: null,
         lastCheckedAt: null,
         lastCheckedBy: null,
+        reading: readings.get(r.id) ?? null,
       };
       const c = latest.get(r.id);
       if (!c) return base;

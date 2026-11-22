@@ -12,8 +12,10 @@ import {
   pendingCheckIns,
   replaceFarmsAndZones,
   replaceMembers,
+  replaceReadings,
   type CheckIn,
   type FarmRow,
+  type ReadingRow,
   type ZoneRow,
 } from './db';
 import { supabase } from './supabase';
@@ -62,6 +64,26 @@ async function run(): Promise<boolean> {
         name: names.get(m.user_id) ?? '',
       })),
     );
+  }
+
+  // Readings from the last two days. A missing table (migration not run yet) is not a failure.
+  const since = new Date(Date.now() - 48 * 3_600_000).toISOString();
+  const readings = await supabase
+    .from('sensor_readings')
+    .select('id, zone_id, percent, read_at, sample')
+    .gte('read_at', since)
+    .order('read_at', { ascending: false })
+    .limit(500);
+  if (!readings.error && readings.data) {
+    replaceReadings(
+      readings.data.map((r: { sample: boolean } & Omit<ReadingRow, 'sample'>) => ({
+        ...r,
+        percent: Number(r.percent),
+        sample: r.sample ? 1 : 0,
+      })),
+    );
+  } else if (readings.error && !['42P01', 'PGRST205'].includes(readings.error.code)) {
+    ok = false;
   }
 
   const recent = await supabase

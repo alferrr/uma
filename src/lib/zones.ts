@@ -15,11 +15,12 @@ export type Zone = {
   lastCheckedAt: string | null;
   /** Name of whoever checked last, when known. */
   lastCheckedBy: string | null;
+  /** Newest sensor reading, when the zone has one. */
+  reading: SensorReading | null;
 };
 
-/** Sensor readings arrive over Bluetooth later; nothing is seeded. */
-export type Reading = { hour: string; percent: number };
-export const READINGS: Reading[] = [];
+/** One soil-moisture reading from a zone's sensor. `sample` marks seeded demo data. */
+export type SensorReading = { percent: number; readAt: string; sample: boolean };
 
 export function moistureFromPercent(p: number): Moisture {
   if (p >= 65) return 'wet';

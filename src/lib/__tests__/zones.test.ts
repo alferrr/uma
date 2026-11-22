@@ -15,6 +15,7 @@ const zone = (over: Partial<Zone>): Zone => ({
   moisture: 'ok',
   lastCheckedAt: hoursAgo(1),
   lastCheckedBy: null,
+  reading: null,
   ...over,
 });
 
