@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -8,76 +8,55 @@ import { AuthLayout } from '@/components/AuthLayout';
 import { ChevronLeft } from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { TextField, type TextFieldHandle } from '@/components/TextField';
-import { getUser } from '@/lib/auth';
-import { newId, upsertZone, useCurrentFarm } from '@/lib/db';
+import { useCurrentFarm, useZone } from '@/lib/db';
+import { canManageFarm, saveZone } from '@/lib/farms';
 import { useT } from '@/lib/i18n';
-import { supabase } from '@/lib/supabase';
-import { syncNow } from '@/lib/sync';
 import { colors, fonts } from '@/theme';
 
 type Errors = { code?: string; form?: string };
 
-/** Add a zone. Owners only; saved to Supabase when configured, else on the phone. */
+/** Add a zone, or edit one with `?id=`. Only the farm's owner can save. */
 export default function AddZone() {
   const t = useT();
-  const [code, setCode] = useState('');
-  const [area, setArea] = useState('');
-  const [row, setRow] = useState('');
-  const [plant, setPlant] = useState('');
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const editing = useZone(id);
+  const farm = useCurrentFarm();
+  const canSave = canManageFarm(farm);
+
+  const [code, setCode] = useState(editing?.code ?? '');
+  const [area, setArea] = useState(editing?.area ?? '');
+  const [row, setRow] = useState(editing?.row ?? '');
+  const [plant, setPlant] = useState(editing?.plant ?? '');
   const [errors, setErrors] = useState<Errors>({});
   const [loading, setLoading] = useState(false);
   const areaRef = useRef<TextFieldHandle>(null);
   const rowRef = useRef<TextFieldHandle>(null);
   const plantRef = useRef<TextFieldHandle>(null);
 
-  const farm = useCurrentFarm();
-  const isOwner = getUser()?.role === 'owner';
-
   async function submit() {
     if (!farm) {
       setErrors({ form: t.addFarmFirst });
       return;
     }
-    const clean = code.trim().toUpperCase();
-    if (!clean) {
+    if (!code.trim()) {
       setErrors({ code: t.codeRequired });
       return;
     }
     setErrors({});
     setLoading(true);
     try {
-      const fields = {
+      const res = await saveZone({
+        id: editing?.id,
         farm_id: farm.id,
-        code: clean,
-        area: area.trim(),
-        row_label: row.trim(),
-        plant: plant.trim() || null,
-      };
-      if (supabase) {
-        const { data, error } = await supabase
-          .from('zones')
-          .insert(fields)
-          .select('id, farm_id, code, area, row_label')
-          .single();
-        if (error) {
-          // 23505 = unique code already used; 42501 = row-level security refused it.
-          if (error.code === '23505') setErrors({ code: t.codeTaken });
-          else if (error.code === '42501') setErrors({ form: t.ownersOnly });
-          else setErrors({ form: t.zoneSaveFailed });
-          return;
-        }
-        upsertZone(data);
-        syncNow();
-      } else {
-        upsertZone({
-          id: newId(),
-          farm_id: farm.id,
-          code: clean,
-          area: fields.area,
-          row_label: fields.row_label,
-        });
-      }
-      router.back();
+        code,
+        area,
+        row_label: row,
+        plant,
+      });
+      if (res.error === 'taken') setErrors({ code: t.codeTaken });
+      else if (res.error === 'forbidden') setErrors({ form: t.ownersOnly });
+      else if (res.error) setErrors({ form: t.zoneSaveFailed });
+      else router.back();
     } catch {
       setErrors({ form: t.zoneSaveFailed });
     } finally {
@@ -102,7 +81,7 @@ export default function AddZone() {
             <ChevronLeft />
           </Pressable>
           <Text style={styles.title} accessibilityRole="header">
-            {t.addA}
+            {editing ? t.editA : t.addA}
             {'\n'}
             <Text style={styles.titleStrong}>{t.zoneWord}</Text>
           </Text>
@@ -148,19 +127,14 @@ export default function AddZone() {
         />
       </View>
 
-      {!isOwner && <Text style={styles.formError}>{t.ownersOnly}</Text>}
+      {!canSave && <Text style={styles.formError}>{t.ownersOnly}</Text>}
       {!!errors.form && (
         <Text style={styles.formError} accessibilityLiveRegion="polite">
           {errors.form}
         </Text>
       )}
       <View style={styles.cta}>
-        <PrimaryButton
-          label={t.saveZone}
-          onPress={submit}
-          loading={loading}
-          disabled={!isOwner || !farm}
-        />
+        <PrimaryButton label={t.saveZone} onPress={submit} loading={loading} disabled={!canSave} />
       </View>
     </AuthLayout>
   );

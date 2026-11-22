@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -9,17 +9,20 @@ import { ChevronLeft } from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { TextField } from '@/components/TextField';
 import { getUser } from '@/lib/auth';
-import { createFarm } from '@/lib/farms';
+import { useFarm } from '@/lib/db';
+import { canManageFarm, createFarm, renameFarm } from '@/lib/farms';
 import { useT } from '@/lib/i18n';
 import { colors, fonts } from '@/theme';
 
-/** Add a farm. Owners only. A farm holds zones. */
+/** Add a farm (owners only), or rename one you own with `?id=`. A farm holds zones. */
 export default function AddFarm() {
   const t = useT();
-  const [name, setName] = useState('');
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const editing = useFarm(id);
+  const [name, setName] = useState(editing?.name ?? '');
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
-  const isOwner = getUser()?.role === 'owner';
+  const canSave = editing ? canManageFarm(editing) : getUser()?.role === 'owner';
 
   async function submit() {
     if (!name.trim()) {
@@ -29,7 +32,7 @@ export default function AddFarm() {
     setError(undefined);
     setLoading(true);
     try {
-      const res = await createFarm(name);
+      const res = editing ? await renameFarm(editing, name) : await createFarm(name);
       if (res.error) setError(res.error === 'forbidden' ? t.ownersOnlyFarm : t.farmSaveFailed);
       else router.back();
     } catch {
@@ -56,7 +59,7 @@ export default function AddFarm() {
             <ChevronLeft />
           </Pressable>
           <Text style={styles.title} accessibilityRole="header">
-            {t.addA}
+            {editing ? t.editA : t.addA}
             {'\n'}
             <Text style={styles.titleStrong}>{t.farmWord}</Text>
           </Text>
@@ -72,9 +75,9 @@ export default function AddFarm() {
         returnKeyType="done"
         onSubmitEditing={submit}
       />
-      {!isOwner && <Text style={styles.note}>{t.ownersOnlyFarm}</Text>}
+      {!canSave && <Text style={styles.note}>{t.ownersOnlyFarm}</Text>}
       <View style={styles.cta}>
-        <PrimaryButton label={t.saveFarm} onPress={submit} loading={loading} disabled={!isOwner} />
+        <PrimaryButton label={t.saveFarm} onPress={submit} loading={loading} disabled={!canSave} />
       </View>
     </AuthLayout>
   );
