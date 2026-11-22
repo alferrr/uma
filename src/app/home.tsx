@@ -18,6 +18,7 @@ import {
   DropIcon,
   PinIcon,
   PlusIcon,
+  ScanIcon,
   SearchIcon,
   SproutIcon,
 } from '@/components/icons';
@@ -133,19 +134,29 @@ export default function Home() {
               {t.heroLine2}
             </Text>
 
-            <View style={styles.search}>
-              <SearchIcon size={20} color={colors.white} />
-              <TextInput
-                value={query}
-                onChangeText={setQuery}
-                placeholder={t.searchZones}
-                placeholderTextColor="rgba(255,255,255,0.7)"
-                accessibilityLabel={t.searchZones}
-                style={styles.searchInput}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                returnKeyType="search"
-              />
+            <View style={styles.searchRow}>
+              <View style={styles.search}>
+                <SearchIcon size={20} color={colors.white} />
+                <TextInput
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder={t.searchZones}
+                  placeholderTextColor="rgba(255,255,255,0.7)"
+                  accessibilityLabel={t.searchZones}
+                  style={styles.searchInput}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  returnKeyType="search"
+                />
+              </View>
+              <Pressable
+                onPress={() => router.push('/scan')}
+                accessibilityRole="button"
+                accessibilityLabel={t.scan}
+                style={({ pressed }) => [styles.scanBtn, pressed && { opacity: 0.85 }]}
+              >
+                <ScanIcon size={24} color={colors.text} />
+              </Pressable>
             </View>
           </View>
         </View>
@@ -305,8 +316,17 @@ const styles = StyleSheet.create({
     color: colors.white,
     letterSpacing: -0.3,
   },
+  searchRow: { marginTop: 26, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  scanBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   search: {
-    marginTop: 26,
+    flex: 1,
     height: 64,
     borderRadius: 32,
     flexDirection: 'row',
