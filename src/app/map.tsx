@@ -13,7 +13,6 @@ import { byAttention, needsVisit, toneFor, type Status } from '@/lib/zones';
 import { colors, fonts, statusColors } from '@/theme';
 
 /** Sample top-down layout: zone IDs in reading order, two plots per row. */
-const LAYOUT = ['pot-01', 'z-03', 'z-02', 'z-04', 'z-05', 'z-06'];
 const COUNT_ORDER: Status[] = ['ok', 'needs_water', 'dead', 'not_checked'];
 
 /** Screen 6 · Map */
@@ -22,7 +21,6 @@ export default function MapScreen() {
   const t = useT();
   const zones = useZones();
 
-  const plots = LAYOUT.map((id) => zones.find((z) => z.id === id)).filter((z) => !!z);
   const visit = zones.filter(needsVisit).sort(byAttention);
   const counts = COUNT_ORDER.map((s) => ({ s, n: zones.filter((z) => z.status === s).length }));
 
@@ -39,8 +37,9 @@ export default function MapScreen() {
         bouncesZoom
         showsVerticalScrollIndicator={false}
       >
+        {zones.length === 0 && <Text style={styles.empty}>{t.noZonesYet}</Text>}
         <View style={styles.grid}>
-          {plots.map((z) => (
+          {zones.map((z) => (
             <Pressable
               key={z.id}
               onPress={() => router.push(`/zone/${z.id}`)}
@@ -50,12 +49,7 @@ export default function MapScreen() {
             >
               <CropTile tone={toneFor(z.status)} style={StyleSheet.absoluteFill} />
               <View style={styles.plotBody}>
-                <StatusTag
-                  code={z.code}
-                  status={z.status}
-                  deadCount={z.deadCount}
-                  highlighted={z.id === 'pot-01'}
-                />
+                <StatusTag code={z.code} status={z.status} deadCount={z.deadCount} />
               </View>
             </Pressable>
           ))}
@@ -73,7 +67,6 @@ export default function MapScreen() {
           </View>
           <View>
             <Text style={styles.farmName}>{t.farmName}</Text>
-            <Text style={styles.farmSub}>{t.sampleLayout}</Text>
           </View>
         </View>
       </View>
@@ -124,6 +117,13 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#5E5A45', justifyContent: 'flex-end' },
   farm: { paddingHorizontal: 14 },
+  empty: {
+    textAlign: 'center',
+    fontFamily: fonts.regular,
+    fontSize: 16,
+    color: colors.white,
+    paddingVertical: 40,
+  },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   plot: {
     width: '48%',

@@ -20,7 +20,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { getUser } from '@/lib/auth';
 import { addCheckIn, useZone, type CheckInStatus } from '@/lib/db';
 import { useT } from '@/lib/i18n';
-import { moistureFromPercent, SAMPLE_READINGS, type Moisture } from '@/lib/zones';
+import type { Moisture } from '@/lib/zones';
 import { colors, fonts, radius } from '@/theme';
 
 const STATUSES: { value: CheckInStatus; icon: (c: string) => ReactNode }[] = [
@@ -35,9 +35,6 @@ const MOISTURES: { value: Moisture; icon: (c: string) => ReactNode }[] = [
   { value: 'dry', icon: (c) => <ClockIcon color={c} size={22} /> },
 ];
 
-// POT-01's latest sample reading pre-fills moisture until the Bluetooth sensor exists.
-const SENSOR = SAMPLE_READINGS[SAMPLE_READINGS.length - 1]!;
-
 /** Screen 9 · Check-in */
 export default function CheckIn() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -45,12 +42,9 @@ export default function CheckIn() {
   const insets = useSafeAreaInsets();
   const t = useT();
 
-  const hasSensor = zone?.id === 'pot-01';
-  const sensorMoisture = moistureFromPercent(SENSOR.percent);
-
   const [status, setStatus] = useState<CheckInStatus | null>(null);
   const [dead, setDead] = useState(1);
-  const [moisture, setMoisture] = useState<Moisture | null>(hasSensor ? sensorMoisture : null);
+  const [moisture, setMoisture] = useState<Moisture | null>(null);
 
   if (!zone) return null;
 
@@ -64,7 +58,7 @@ export default function CheckIn() {
       status,
       dead_count: status === 'dead' ? dead : 0,
       moisture,
-      source: hasSensor && moisture === sensorMoisture ? 'sensor' : 'finger',
+      source: 'finger',
     });
     router.replace({
       pathname: '/saved',
@@ -164,11 +158,6 @@ export default function CheckIn() {
 
           <View style={styles.moistureHead}>
             <Text style={styles.section}>{t.soilMoisture}</Text>
-            {hasSensor && (
-              <Text style={styles.sensor}>
-                {t.sampleData} · {SENSOR.percent}%
-              </Text>
-            )}
           </View>
           <View style={styles.tiles} accessibilityRole="radiogroup">
             {MOISTURES.map((m) => {
@@ -290,7 +279,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   section: { fontFamily: fonts.medium, fontSize: 22, color: colors.text },
-  sensor: { fontFamily: fonts.regular, fontSize: 13, color: colors.green },
   tiles: { flexDirection: 'row', gap: 10 },
   tile: {
     flex: 1,

@@ -10,13 +10,7 @@ import { ZoneCard } from '@/components/ZoneCard';
 import { getUser, signOut } from '@/lib/auth';
 import { useZones } from '@/lib/db';
 import { useLanguage, useT } from '@/lib/i18n';
-import {
-  byAttention,
-  moistureFromPercent,
-  SAMPLE_READINGS,
-  toneFor,
-  type Status,
-} from '@/lib/zones';
+import { byAttention, moistureFromPercent, READINGS, toneFor, type Status } from '@/lib/zones';
 import { colors, fonts } from '@/theme';
 
 type Filter = 'all' | Exclude<Status, 'ok'>;
@@ -56,8 +50,8 @@ export default function Home() {
     year: 'numeric',
   });
 
-  const reading = SAMPLE_READINGS[hour]!;
-  const level = moistureFromPercent(reading.percent);
+  const reading = READINGS[Math.min(hour, READINGS.length - 1)];
+  const level = reading ? moistureFromPercent(reading.percent) : null;
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -134,49 +128,48 @@ export default function Home() {
           </View>
         </View>
 
-        {/* Moisture card */}
-        <View style={styles.moistureCard}>
-          <SunsetField style={StyleSheet.absoluteFill} />
-          <View style={styles.moistureShade} />
-          <View style={styles.moistureBody}>
-            <View style={styles.hours} accessibilityRole="tablist">
-              {SAMPLE_READINGS.map((r, i) => {
-                const on = i === hour;
-                return (
-                  <Pressable
-                    key={r.hour}
-                    onPress={() => setHour(i)}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: on }}
-                    accessibilityLabel={`${r.hour}:00, ${r.percent}%`}
-                    style={[styles.hourPill, on && styles.hourPillOn]}
-                  >
-                    <Text style={styles.hourText}>{r.hour}</Text>
-                    <DropIcon size={18} color={colors.white} />
-                    <Text style={styles.hourPct}>{r.percent}%</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Text style={styles.cardDate}>{today}</Text>
-            <View style={styles.readingRow}>
-              <Text style={styles.bigPct}>{reading.percent}%</Text>
-              <View style={styles.levelRow}>
-                <DropIcon size={16} color="#F3D27A" />
-                <Text style={styles.levelText}>{t.moistureLabel[level]}</Text>
+        {/* Moisture card: only when a sensor has reported */}
+        {reading && level && (
+          <View style={styles.moistureCard}>
+            <SunsetField style={StyleSheet.absoluteFill} />
+            <View style={styles.moistureShade} />
+            <View style={styles.moistureBody}>
+              <View style={styles.hours} accessibilityRole="tablist">
+                {READINGS.map((r, i) => {
+                  const on = i === hour;
+                  return (
+                    <Pressable
+                      key={r.hour}
+                      onPress={() => setHour(i)}
+                      accessibilityRole="tab"
+                      accessibilityState={{ selected: on }}
+                      accessibilityLabel={`${r.hour}:00, ${r.percent}%`}
+                      style={[styles.hourPill, on && styles.hourPillOn]}
+                    >
+                      <Text style={styles.hourText}>{r.hour}</Text>
+                      <DropIcon size={18} color={colors.white} />
+                      <Text style={styles.hourPct}>{r.percent}%</Text>
+                    </Pressable>
+                  );
+                })}
               </View>
-            </View>
-            <View style={styles.cardFooter}>
-              <View style={styles.levelRow}>
-                <SproutIcon size={16} color={colors.white} />
-                <Text style={styles.footerText}>{t.soilMoisture} · POT-01</Text>
+              <Text style={styles.cardDate}>{today}</Text>
+              <View style={styles.readingRow}>
+                <Text style={styles.bigPct}>{reading.percent}%</Text>
+                <View style={styles.levelRow}>
+                  <DropIcon size={16} color="#F3D27A" />
+                  <Text style={styles.levelText}>{t.moistureLabel[level]}</Text>
+                </View>
               </View>
-              <View style={styles.samplePill}>
-                <Text style={styles.samplePillText}>{t.sampleData}</Text>
+              <View style={styles.cardFooter}>
+                <View style={styles.levelRow}>
+                  <SproutIcon size={16} color={colors.white} />
+                  <Text style={styles.footerText}>{t.soilMoisture} · POT-01</Text>
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Filters */}
         <ScrollView
@@ -223,7 +216,7 @@ export default function Home() {
 
         <View style={styles.cards}>
           {shown.length === 0 ? (
-            <Text style={styles.empty}>{t.noZones}</Text>
+            <Text style={styles.empty}>{zones.length === 0 ? t.noZonesYet : t.noZones}</Text>
           ) : (
             shown.map((z) => (
               <ZoneCard key={z.id} zone={z} onPress={() => router.push(`/zone/${z.id}`)} />
@@ -326,16 +319,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   footerText: { fontFamily: fonts.regular, fontSize: 14, color: colors.white },
-  samplePill: {
-    paddingHorizontal: 12,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.4)',
-  },
-  samplePillText: { fontFamily: fonts.regular, fontSize: 13, color: colors.white },
   filters: { gap: 12, paddingHorizontal: 18, paddingVertical: 22 },
   chip: {
     flexDirection: 'row',
