@@ -15,29 +15,14 @@ export type Zone = {
   moisture: Moisture | null;
   /** ISO time of the last check, or null if never checked. */
   lastCheckedAt: string | null;
-  sample: boolean;
 };
 
-const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
+/** Zones come from the database once sync exists; nothing is seeded. */
+export const ZONES: Zone[] = [];
 
-export const SAMPLE_ZONES: Zone[] = [
-  { id: 'pot-01', code: 'POT-01', area: 'Zone A', row: 'Row 3', status: 'ok', deadCount: 0, moisture: 'ok', lastCheckedAt: hoursAgo(2), sample: false },
-  { id: 'z-02', code: 'Z-02', area: 'Zone A', row: 'Row 4', status: 'ok', deadCount: 0, moisture: 'ok', lastCheckedAt: hoursAgo(5), sample: true },
-  { id: 'z-03', code: 'Z-03', area: 'Zone B', row: 'Row 1', status: 'not_checked', deadCount: 0, moisture: null, lastCheckedAt: null, sample: true },
-  { id: 'z-04', code: 'Z-04', area: 'Zone B', row: 'Row 2', status: 'needs_water', deadCount: 0, moisture: 'dry', lastCheckedAt: hoursAgo(26), sample: true },
-  { id: 'z-05', code: 'Z-05', area: 'Zone C', row: 'Row 1', status: 'dead', deadCount: 3, moisture: 'dry', lastCheckedAt: hoursAgo(30), sample: true },
-  { id: 'z-06', code: 'Z-06', area: 'Zone C', row: 'Row 2', status: 'ok', deadCount: 0, moisture: 'wet', lastCheckedAt: hoursAgo(3), sample: true },
-];
-
-/** Sample hourly sensor readings for POT-01 (no Bluetooth yet). */
-export const SAMPLE_READINGS = [
-  { hour: '09', percent: 62 },
-  { hour: '10', percent: 58 },
-  { hour: '11', percent: 54 },
-  { hour: '12', percent: 49 },
-  { hour: '13', percent: 45 },
-  { hour: '14', percent: 41 },
-];
+/** Sensor readings arrive over Bluetooth later; nothing is seeded. */
+export type Reading = { hour: string; percent: number };
+export const READINGS: Reading[] = [];
 
 export function moistureFromPercent(p: number): Moisture {
   if (p >= 65) return 'wet';
@@ -64,7 +49,9 @@ export function byAttention(a: Zone, b: Zone) {
 }
 
 export function toneFor(status: Status) {
-  return ({ ok: 'green', needs_water: 'yellow', dead: 'brown', not_checked: 'grey' } as const)[status];
+  return ({ ok: 'green', needs_water: 'yellow', dead: 'brown', not_checked: 'grey' } as const)[
+    status
+  ];
 }
 
 /** Whole hours since an ISO time. */

@@ -5,7 +5,7 @@
 import { openDatabaseSync } from 'expo-sqlite';
 import { useSyncExternalStore } from 'react';
 
-import { SAMPLE_ZONES, type Moisture, type Status, type Zone } from './zones';
+import { ZONES, type Moisture, type Status, type Zone } from './zones';
 
 export type CheckInStatus = Exclude<Status, 'not_checked'>;
 
@@ -59,7 +59,12 @@ function subscribe(l: () => void) {
 }
 
 export function addCheckIn(input: Omit<CheckIn, 'id' | 'checked_at' | 'synced_at'>): CheckIn {
-  const row: CheckIn = { ...input, id: uuid(), checked_at: new Date().toISOString(), synced_at: null };
+  const row: CheckIn = {
+    ...input,
+    id: uuid(),
+    checked_at: new Date().toISOString(),
+    synced_at: null,
+  };
   db.runSync(
     `INSERT INTO check_in (id, zone_id, worker_id, status, dead_count, moisture, source, checked_at, synced_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
@@ -77,7 +82,10 @@ export function addCheckIn(input: Omit<CheckIn, 'id' | 'checked_at' | 'synced_at
 }
 
 export function unsyncedCount() {
-  return db.getFirstSync<{ n: number }>('SELECT COUNT(*) AS n FROM check_in WHERE synced_at IS NULL')?.n ?? 0;
+  return (
+    db.getFirstSync<{ n: number }>('SELECT COUNT(*) AS n FROM check_in WHERE synced_at IS NULL')
+      ?.n ?? 0
+  );
 }
 
 function latestCheckIns() {
@@ -88,13 +96,19 @@ function latestCheckIns() {
   );
 }
 
-/** Sample zones with the newest local check-in applied on top. */
+/** Zones with the newest local check-in applied on top. */
 function readZones(): Zone[] {
   const latest = new Map(latestCheckIns().map((c) => [c.zone_id, c]));
-  return SAMPLE_ZONES.map((z) => {
+  return ZONES.map((z) => {
     const c = latest.get(z.id);
     if (!c) return z;
-    return { ...z, status: c.status, deadCount: c.dead_count, moisture: c.moisture, lastCheckedAt: c.checked_at };
+    return {
+      ...z,
+      status: c.status,
+      deadCount: c.dead_count,
+      moisture: c.moisture,
+      lastCheckedAt: c.checked_at,
+    };
   });
 }
 
