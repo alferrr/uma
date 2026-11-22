@@ -46,6 +46,7 @@ export function ZoneCard({ zone, onPress }: { zone: Zone; onPress: () => void })
               <PinIcon size={15} color="rgba(255,255,255,0.9)" />
               <Text style={styles.metaText} numberOfLines={1}>
                 {zone.area} | {zone.row} · {when}
+                {zone.lastCheckedBy ? ` · ${t.byName(zone.lastCheckedBy)}` : ''}
               </Text>
             </View>
             <Text style={styles.code}>{zone.code}</Text>

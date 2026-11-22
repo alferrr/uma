@@ -4,7 +4,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CropTile, GreenStripes, ZoneAerial } from '@/components/art';
-import { ChevronLeft, DropIcon, TrashIcon } from '@/components/icons';
+import { ChevronLeft, DropIcon, HistoryIcon, PencilIcon, TrashIcon } from '@/components/icons';
 import { IconButton } from '@/components/IconButton';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { StatusIcon } from '@/components/status';
@@ -92,7 +92,10 @@ export default function ZoneDetails() {
             <Text style={styles.code} accessibilityRole="header">
               {zone.code}
             </Text>
-            <Text style={styles.last}>{last ? `${t.lastChecked}: ${last}` : t.never}</Text>
+            <Text style={styles.last} numberOfLines={2}>
+              {last ? `${t.lastChecked}: ${last}` : t.never}
+              {zone.lastCheckedBy ? ` · ${t.byName(zone.lastCheckedBy)}` : ''}
+            </Text>
           </View>
           {zone.moisture && (
             <View style={styles.moisture}>
@@ -112,19 +115,57 @@ export default function ZoneDetails() {
             <PrimaryButton label={t.checkIn} onPress={() => router.push(`/check-in/${zone.id}`)} />
           </View>
         </View>
-        {canDelete && (
-          <Pressable
-            onPress={confirmDelete}
-            accessibilityRole="button"
-            accessibilityLabel={`${t.deleteZone}: ${zone.code}`}
-            style={({ pressed }) => [styles.delete, pressed && { opacity: 0.6 }]}
-          >
-            <TrashIcon size={18} color={colors.danger} />
-            <Text style={styles.deleteText}>{t.deleteZone}</Text>
-          </Pressable>
-        )}
+        <View style={styles.actions}>
+          <Action
+            icon={<HistoryIcon size={18} color={colors.green} />}
+            label={t.history}
+            color={colors.green}
+            onPress={() => router.push(`/history/${zone.id}`)}
+          />
+          {canDelete && (
+            <Action
+              icon={<PencilIcon size={18} color={colors.text} />}
+              label={t.editZone}
+              color={colors.text}
+              onPress={() => router.push(`/add-zone?id=${zone.id}`)}
+            />
+          )}
+          {canDelete && (
+            <Action
+              icon={<TrashIcon size={18} color={colors.danger} />}
+              label={t.deleteZone}
+              color={colors.danger}
+              onPress={confirmDelete}
+            />
+          )}
+        </View>
       </View>
     </View>
+  );
+}
+
+function Action({
+  icon,
+  label,
+  color,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.action, pressed && { opacity: 0.6 }]}
+    >
+      {icon}
+      <Text style={[styles.actionText, { color }]} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -207,14 +248,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.3)',
   },
   badgeText: { fontFamily: fonts.regular, fontSize: 15, color: colors.white },
-  delete: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    height: 44,
-  },
-  deleteText: { fontFamily: fonts.medium, fontSize: 15, color: colors.danger },
+  actions: { flexDirection: 'row', justifyContent: 'space-around' },
+  action: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingHorizontal: 6 },
+  actionText: { fontFamily: fonts.medium, fontSize: 14 },
   missing: { flex: 1, padding: 24, gap: 20, backgroundColor: colors.bg },
   missingText: { fontFamily: fonts.regular, fontSize: 17, color: colors.text },
 });
