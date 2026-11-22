@@ -1,0 +1,8 @@
+<!-- The Uma sprout mark, copied path-for-path from LeafLogo in src/components/icons.tsx. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" fill="none" stroke="#16923F" stroke-width="2.4">
+  <circle cx="28" cy="28" r="26"/>
+  <path d="M28 40V22" stroke-linecap="round"/>
+  <path d="M28 30c-6.5 0-10-3.6-10-9.5 6.5 0 10 3.6 10 9.5Z" stroke-linejoin="round"/>
+  <path d="M28 27c0-5.9 3.5-9.5 10-9.5 0 5.9-3.5 9.5-10 9.5Z" stroke-linejoin="round"/>
+  <path d="M18 40h20" stroke-linecap="round"/>
+</svg>
