@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CropTile, GreenStripes, SunsetField } from '@/components/art';
-import { ArrowUpRight, ChevronLeft } from '@/components/icons';
+import { ArrowUpRight, ChevronLeft, ZoomInIcon, ZoomOutIcon } from '@/components/icons';
 import { IconButton } from '@/components/IconButton';
 import { StatusTag } from '@/components/status';
 import { useCurrentFarm, useZones } from '@/lib/db';
@@ -12,8 +13,9 @@ import { useT } from '@/lib/i18n';
 import { byAttention, needsVisit, toneFor, type Status } from '@/lib/zones';
 import { colors, fonts, statusColors } from '@/theme';
 
-/** Sample top-down layout: zone IDs in reading order, two plots per row. */
 const COUNT_ORDER: Status[] = ['ok', 'needs_water', 'dead', 'not_checked'];
+const ZOOMS = [1, 1.5, 2];
+const PLOT_HEIGHT = 210;
 
 /** Screen 6 · Map */
 export default function MapScreen() {
@@ -21,6 +23,9 @@ export default function MapScreen() {
   const t = useT();
   const zones = useZones();
   const farm = useCurrentFarm();
+  const { width } = useWindowDimensions();
+  const [zoomStep, setZoomStep] = useState(0);
+  const zoom = ZOOMS[zoomStep]!;
 
   const visit = zones.filter(needsVisit).sort(byAttention);
   const counts = COUNT_ORDER.map((s) => ({ s, n: zones.filter((z) => z.status === s).length }));
@@ -29,33 +34,63 @@ export default function MapScreen() {
     <View style={styles.root}>
       <StatusBar style="light" />
 
-      {/* Pinch to zoom on iOS. */}
       <ScrollView
         style={StyleSheet.absoluteFill}
-        contentContainerStyle={[styles.farm, { paddingTop: insets.top + 96, paddingBottom: 260 }]}
-        maximumZoomScale={2.5}
-        minimumZoomScale={1}
-        bouncesZoom
+        contentContainerStyle={{ paddingTop: insets.top + 96, paddingBottom: 260 }}
         showsVerticalScrollIndicator={false}
       >
         {zones.length === 0 && <Text style={styles.empty}>{t.noZonesYet}</Text>}
-        <View style={styles.grid}>
-          {zones.map((z) => (
-            <Pressable
-              key={z.id}
-              onPress={() => router.push(`/zone/${z.id}`)}
-              accessibilityRole="button"
-              accessibilityLabel={`${z.code}, ${t.status[z.status]}`}
-              style={({ pressed }) => [styles.plot, pressed && { opacity: 0.85 }]}
-            >
-              <CropTile tone={toneFor(z.status)} style={StyleSheet.absoluteFill} />
-              <View style={styles.plotBody}>
-                <StatusTag code={z.code} status={z.status} deadCount={z.deadCount} />
-              </View>
-            </Pressable>
-          ))}
-        </View>
+        {/* Zooming makes the plots bigger; scroll sideways to see the rest. */}
+        <ScrollView
+          horizontal
+          scrollEnabled={zoom > 1}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.farm}
+        >
+          <View style={[styles.grid, { width: (width - 28) * zoom }]}>
+            {zones.map((z) => (
+              <Pressable
+                key={z.id}
+                onPress={() => router.push(`/zone/${z.id}`)}
+                accessibilityRole="button"
+                accessibilityLabel={`${z.code}, ${t.status[z.status]}`}
+                style={({ pressed }) => [
+                  styles.plot,
+                  { height: PLOT_HEIGHT * zoom },
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                <CropTile tone={toneFor(z.status)} style={StyleSheet.absoluteFill} />
+                <View style={styles.plotBody}>
+                  <StatusTag code={z.code} status={z.status} deadCount={z.deadCount} />
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
       </ScrollView>
+
+      {zones.length > 0 && (
+        <View style={[styles.zoom, { top: insets.top + 84 }]}>
+          <IconButton
+            label={t.zoomIn}
+            onPress={() => setZoomStep((n) => Math.min(n + 1, ZOOMS.length - 1))}
+            size={52}
+          >
+            <ZoomInIcon
+              size={22}
+              color={zoomStep < ZOOMS.length - 1 ? colors.white : 'rgba(255,255,255,0.4)'}
+            />
+          </IconButton>
+          <IconButton
+            label={t.zoomOut}
+            onPress={() => setZoomStep((n) => Math.max(n - 1, 0))}
+            size={52}
+          >
+            <ZoomOutIcon size={22} color={zoomStep > 0 ? colors.white : 'rgba(255,255,255,0.4)'} />
+          </IconButton>
+        </View>
+      )}
 
       {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
@@ -126,11 +161,11 @@ const styles = StyleSheet.create({
     color: colors.white,
     paddingVertical: 40,
   },
+  zoom: { position: 'absolute', right: 22, gap: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   plot: {
     width: '48%',
     flexGrow: 1,
-    height: 210,
     borderRadius: 6,
     overflow: 'hidden',
   },
