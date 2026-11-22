@@ -46,7 +46,7 @@ db.execSync(`
 `);
 
 /** RFC 4122 v4 ID. Hermes has no crypto.randomUUID; this is fine for record IDs. */
-function uuid() {
+export function newId() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
@@ -68,7 +68,7 @@ function subscribe(l: () => void) {
 export function addCheckIn(input: Omit<CheckIn, 'id' | 'checked_at' | 'synced_at'>): CheckIn {
   const row: CheckIn = {
     ...input,
-    id: uuid(),
+    id: newId(),
     checked_at: new Date().toISOString(),
     synced_at: null,
   };
@@ -104,6 +104,19 @@ export function replaceZones(rows: ZoneRow[]) {
       );
     }
   });
+  emit();
+}
+
+/** Add or update one zone in the local copy. */
+export function upsertZone(r: ZoneRow) {
+  db.runSync(
+    `INSERT INTO zone (id, code, area, row_label) VALUES (?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET code = excluded.code, area = excluded.area, row_label = excluded.row_label`,
+    r.id,
+    r.code,
+    r.area,
+    r.row_label,
+  );
   emit();
 }
 
