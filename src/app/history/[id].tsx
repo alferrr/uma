@@ -6,8 +6,9 @@ import { GreenStripes } from '@/components/art';
 import { BackHero } from '@/components/BackHero';
 import { ClockIcon, DropIcon } from '@/components/icons';
 import { StatusIcon } from '@/components/status';
-import { useHistory, useZone } from '@/lib/db';
+import { useHistory } from '@/lib/db';
 import { useT } from '@/lib/i18n';
+import { useZoneById } from '@/lib/useZoneById';
 import { colors, fonts, statusColors } from '@/theme';
 
 const when = (iso: string) =>
@@ -24,7 +25,7 @@ export default function History() {
   const t = useT();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const zone = useZone(id);
+  const zone = useZoneById(id);
   const rows = useHistory(id);
 
   return (

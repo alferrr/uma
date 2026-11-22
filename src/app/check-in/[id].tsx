@@ -18,8 +18,9 @@ import {
 import { IconButton } from '@/components/IconButton';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { getUser } from '@/lib/auth';
-import { addCheckIn, useZone, type CheckInStatus } from '@/lib/db';
+import { addCheckIn, type CheckInStatus } from '@/lib/db';
 import { useT } from '@/lib/i18n';
+import { useZoneById } from '@/lib/useZoneById';
 import { syncNow } from '@/lib/sync';
 import type { Moisture } from '@/lib/zones';
 import { colors, fonts, radius } from '@/theme';
@@ -39,7 +40,7 @@ const MOISTURES: { value: Moisture; icon: (c: string) => ReactNode }[] = [
 /** Screen 9 · Check-in */
 export default function CheckIn() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const zone = useZone(id);
+  const zone = useZoneById(id);
   const insets = useSafeAreaInsets();
   const t = useT();
 

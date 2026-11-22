@@ -340,6 +340,11 @@ export function clearServerCopies() {
   emit();
 }
 
+/** A zone by id in any farm on this phone (scanning can land on another farm's zone). */
+export function findZone(id: string): ZoneRow | null {
+  return db.getFirstSync<ZoneRow>('SELECT * FROM zone WHERE id = ?', id);
+}
+
 /** Pick which farm Home, Map and zone lists show. */
 export function setCurrentFarm(id: string) {
   chosenFarmId = id;
