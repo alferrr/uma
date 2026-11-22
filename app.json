@@ -32,6 +32,13 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Uma to use the camera to scan the QR code on a zone.",
+          "recordAudioAndroid": false
+        }
       ]
     ],
     "scheme": "uma",
