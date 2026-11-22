@@ -216,3 +216,21 @@ export const ZoomInIcon = (p: IconProps) => (
 export const ZoomOutIcon = (p: IconProps) => (
   <StrokeIcon {...p} d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM16 16l4.5 4.5M8 11h6" />
 );
+export const ScanIcon = (p: IconProps) => (
+  <StrokeIcon
+    {...p}
+    d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"
+  />
+);
+export const QrIcon = (p: IconProps) => (
+  <StrokeIcon
+    {...p}
+    d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2M18 18h2v2M16 16h2v2"
+  />
+);
+export const PrinterIcon = (p: IconProps) => (
+  <StrokeIcon
+    {...p}
+    d="M7 9V4h10v5M7 18H5a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M7 14h10v6H7z"
+  />
+);
