@@ -340,8 +340,11 @@ const styles = StyleSheet.create({
   chipThumb: { width: 52, height: 52, borderRadius: 26, overflow: 'hidden' },
   chipText: { fontFamily: fonts.medium, fontSize: 17, color: colors.text },
   chipTextOn: { color: colors.white },
+  // Wraps the buttons under the title when a language makes the labels long.
   sectionHead: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    rowGap: 10,
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
