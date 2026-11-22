@@ -9,9 +9,8 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { TextField, type TextFieldHandle } from '@/components/TextField';
 import { resetWithCode, sendResetCode } from '@/lib/auth';
 import { afterSignInRoute, useT } from '@/lib/i18n';
+import { isEmail } from '@/lib/validate';
 import { colors, fonts } from '@/theme';
-
-const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
 type Errors = { email?: string; code?: string; password?: string; form?: string };
 

@@ -7,6 +7,10 @@ import 'expo-sqlite/localStorage/install';
 
 import { useEffect, useSyncExternalStore } from 'react';
 
+import { conditionFromCode, type Condition } from './weatherCodes';
+
+export type { Condition } from './weatherCodes';
+
 const LAT = 10.3157;
 const LON = 123.8854;
 const URL =
@@ -18,8 +22,6 @@ const URL =
 
 const CACHE_KEY = 'uma.weather';
 const FRESH_MS = 15 * 60_000;
-
-export type Condition = 'clear' | 'partly' | 'cloudy' | 'fog' | 'drizzle' | 'rain' | 'storm';
 
 export type HourWeather = { hour: string; tempC: number; condition: Condition; isDay: boolean };
 
@@ -37,18 +39,6 @@ export type Weather = {
   /** ISO time this reading was fetched. */
   fetchedAt: string;
 };
-
-/** WMO weather codes, grouped. https://open-meteo.com/en/docs */
-export function conditionFromCode(code: number): Condition {
-  if (code === 0) return 'clear';
-  if (code <= 2) return 'partly';
-  if (code === 3) return 'cloudy';
-  if (code === 45 || code === 48) return 'fog';
-  if (code >= 51 && code <= 57) return 'drizzle';
-  if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
-  if (code >= 95) return 'storm';
-  return 'cloudy';
-}
 
 type Forecast = {
   current: {

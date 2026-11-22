@@ -141,10 +141,4 @@ export async function signOut() {
   await supabase?.auth.signOut();
 }
 
-/** Accepts an email or a PH mobile number (09xx… or +639xx…). */
-export function isEmailOrPhone(value: string) {
-  const v = value.trim();
-  const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-  const phone = /^(\+?63|0)9\d{9}$/.test(v.replace(/[\s-]/g, ''));
-  return email || phone;
-}
+export { isEmailOrPhone } from './validate';
