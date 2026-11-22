@@ -76,7 +76,9 @@ export default function Profile() {
 
   async function logOut() {
     await signOut();
-    router.replace('/');
+    // Clear the signed-in screens so Back can't return to them, then go to Sign in.
+    if (router.canDismiss()) router.dismissAll();
+    router.replace('/sign-in');
   }
 
   return (
