@@ -14,12 +14,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CropTile, SunsetField } from '@/components/art';
-import { ChevronRight, DropIcon, SearchIcon, SproutIcon } from '@/components/icons';
+import { ChevronRight, DropIcon, PlusIcon, SearchIcon, SproutIcon } from '@/components/icons';
+import { PrimaryButton } from '@/components/PrimaryButton';
+import { WeatherCard } from '@/components/WeatherCard';
 import { ZoneCard } from '@/components/ZoneCard';
 import { getUser, signOut } from '@/lib/auth';
 import { useZones } from '@/lib/db';
 import { useLanguage, useT } from '@/lib/i18n';
 import { syncNow } from '@/lib/sync';
+import { refreshWeather } from '@/lib/weather';
 import { byAttention, moistureFromPercent, READINGS, toneFor, type Status } from '@/lib/zones';
 import { colors, fonts } from '@/theme';
 
@@ -44,6 +47,7 @@ export default function Home() {
   const lang = useLanguage() ?? 'en';
   const zones = useZones();
   const user = getUser();
+  const isOwner = user?.role === 'owner';
   const name = user?.name ?? 'Owner';
 
   const [query, setQuery] = useState('');
@@ -58,7 +62,7 @@ export default function Home() {
 
   async function refresh() {
     setRefreshing(true);
-    await syncNow();
+    await Promise.all([syncNow(), refreshWeather()]);
     setRefreshing(false);
   }
 
@@ -151,6 +155,8 @@ export default function Home() {
           </View>
         </View>
 
+        <WeatherCard />
+
         {/* Moisture card: only when a sensor has reported */}
         {reading && level && (
           <View style={styles.moistureCard}>
@@ -226,20 +232,41 @@ export default function Home() {
           <Text style={styles.section} accessibilityRole="header">
             {t.myZones}
           </Text>
-          <Pressable
-            onPress={() => router.push('/map')}
-            accessibilityRole="link"
-            hitSlop={10}
-            style={styles.seeAll}
-          >
-            <Text style={styles.seeAllText}>{t.seeAll}</Text>
-            <ChevronRight size={16} color={colors.muted} />
-          </Pressable>
+          <View style={styles.headActions}>
+            {isOwner && (
+              <Pressable
+                onPress={() => router.push('/add-zone')}
+                accessibilityRole="button"
+                accessibilityLabel={t.addZone}
+                style={({ pressed }) => [styles.addZone, pressed && { opacity: 0.85 }]}
+              >
+                <PlusIcon size={16} color={colors.white} strokeWidth={2.2} />
+                <Text style={styles.addZoneText}>{t.addZone}</Text>
+              </Pressable>
+            )}
+            <Pressable
+              onPress={() => router.push('/map')}
+              accessibilityRole="link"
+              hitSlop={10}
+              style={styles.seeAll}
+            >
+              <Text style={styles.seeAllText}>{t.seeAll}</Text>
+              <ChevronRight size={16} color={colors.muted} />
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.cards}>
           {shown.length === 0 ? (
-            <Text style={styles.empty}>{zones.length === 0 ? t.noZonesYet : t.noZones}</Text>
+            <View style={styles.emptyBox}>
+              <Text style={styles.empty}>{zones.length === 0 ? t.noZonesYet : t.noZones}</Text>
+              {zones.length === 0 && isOwner && (
+                <>
+                  <Text style={styles.emptyHint}>{t.noZonesHint}</Text>
+                  <PrimaryButton label={t.addZone} onPress={() => router.push('/add-zone')} />
+                </>
+              )}
+            </View>
           ) : (
             shown.map((z) => (
               <ZoneCard key={z.id} zone={z} onPress={() => router.push(`/zone/${z.id}`)} />
@@ -297,7 +324,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   moistureCard: {
-    marginTop: -78,
+    marginTop: 16,
     marginHorizontal: 18,
     borderRadius: 32,
     overflow: 'hidden',
@@ -365,6 +392,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   section: { fontFamily: fonts.medium, fontSize: 24, color: colors.text },
+  headActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  addZone: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: 19,
+    backgroundColor: colors.green,
+  },
+  addZoneText: { fontFamily: fonts.medium, fontSize: 14, color: colors.white },
+  emptyBox: { gap: 12, alignItems: 'stretch', paddingVertical: 10 },
+  emptyHint: { textAlign: 'center', fontFamily: fonts.regular, fontSize: 14, color: colors.muted },
   seeAll: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   seeAllText: { fontFamily: fonts.regular, fontSize: 16, color: colors.muted },
   cards: { paddingHorizontal: 18, gap: 16 },
