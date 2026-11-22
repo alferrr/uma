@@ -208,18 +208,16 @@ export default function Home() {
             onPress={() => router.push('/farms')}
             accessibilityRole="button"
             accessibilityLabel={`${t.youAreIn(farm.name)}. ${t.changeFarm}`}
-            style={({ pressed }) => [styles.farmBar, pressed && { opacity: 0.85 }]}
+            style={({ pressed }) => [styles.farmLine, pressed && { opacity: 0.7 }]}
           >
-            <View style={styles.farmIcon}>
-              <PinIcon size={20} color={colors.green} />
-            </View>
-            <View style={styles.farmText}>
-              <Text style={styles.youAreIn} numberOfLines={1}>
-                {t.youAreInPrefix} <Text style={styles.farmStrong}>{farm.name}</Text>
-              </Text>
+            <PinIcon size={18} color={colors.green} />
+            <Text style={styles.youAreIn} numberOfLines={1}>
+              {t.youAreInPrefix} <Text style={styles.farmStrong}>{farm.name}</Text>
+            </Text>
+            <Text style={styles.changeLine}>
+              {'. '}
               <Text style={styles.changeFarm}>{t.changeFarm}</Text>
-            </View>
-            <ChevronRight size={16} color={colors.muted} />
+            </Text>
           </Pressable>
         )}
 
@@ -361,31 +359,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green,
   },
   addZoneText: { fontFamily: fonts.medium, fontSize: 14, color: colors.white },
-  farmBar: {
+  farmLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
     marginHorizontal: 24,
     marginBottom: 16,
-    padding: 10,
-    paddingRight: 16,
-    borderRadius: 28,
-    backgroundColor: colors.surface,
   },
-  farmIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#EAF5EC',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  farmText: { flex: 1 },
-  youAreIn: { fontFamily: fonts.regular, fontSize: 16, color: colors.text },
+  // The farm name shrinks with an ellipsis; "Change farm?" always stays visible.
+  youAreIn: { flexShrink: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.text },
   farmStrong: { fontFamily: fonts.semibold },
+  changeLine: {
+    flexShrink: 0,
+    marginLeft: -8,
+    fontFamily: fonts.regular,
+    fontSize: 15,
+    color: colors.text,
+  },
   changeFarm: {
     fontFamily: fonts.medium,
-    fontSize: 14,
     color: colors.green,
     textDecorationLine: 'underline',
   },
