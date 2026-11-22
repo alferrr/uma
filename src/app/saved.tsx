@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FieldRows } from '@/components/art';
 import { CheckIcon, ClockIcon } from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
-import { unsyncedCount } from '@/lib/db';
+import { useUnsyncedCount } from '@/lib/db';
 import { useT } from '@/lib/i18n';
 import type { Moisture, Status } from '@/lib/zones';
 import { colors, fonts } from '@/theme';
@@ -31,7 +31,7 @@ export default function Saved() {
   const insets = useSafeAreaInsets();
   const t = useT();
   const [left, setLeft] = useState(RETURN_AFTER);
-  const [pending] = useState(unsyncedCount);
+  const pending = useUnsyncedCount();
 
   useEffect(() => {
     if (left <= 0) {

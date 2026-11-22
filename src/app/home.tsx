@@ -1,7 +1,16 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CropTile, SunsetField } from '@/components/art';
@@ -10,6 +19,7 @@ import { ZoneCard } from '@/components/ZoneCard';
 import { getUser, signOut } from '@/lib/auth';
 import { useZones } from '@/lib/db';
 import { useLanguage, useT } from '@/lib/i18n';
+import { syncNow } from '@/lib/sync';
 import { byAttention, moistureFromPercent, READINGS, toneFor, type Status } from '@/lib/zones';
 import { colors, fonts } from '@/theme';
 
@@ -39,6 +49,18 @@ export default function Home() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [hour, setHour] = useState(2);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Pull zones and push saved check-ins when Home opens.
+  useEffect(() => {
+    syncNow();
+  }, []);
+
+  async function refresh() {
+    setRefreshing(true);
+    await syncNow();
+    setRefreshing(false);
+  }
 
   const now = new Date();
   const h = now.getHours();
@@ -82,6 +104,7 @@ export default function Home() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
       >
         {/* Hero */}

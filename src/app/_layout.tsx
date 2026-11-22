@@ -8,7 +8,11 @@ import {
 } from '@expo-google-fonts/outfit';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { syncNow } from '@/lib/sync';
 
 import { colors } from '@/theme';
 
@@ -20,6 +24,11 @@ export default function RootLayout() {
     Outfit_600SemiBold,
     Outfit_700Bold,
   });
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => s === 'active' && syncNow());
+    return () => sub.remove();
+  }, []);
 
   // Keep the native splash up until Outfit is ready; fall through on error.
   if (!loaded && !error) return null;

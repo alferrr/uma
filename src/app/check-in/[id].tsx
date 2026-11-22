@@ -20,6 +20,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { getUser } from '@/lib/auth';
 import { addCheckIn, useZone, type CheckInStatus } from '@/lib/db';
 import { useT } from '@/lib/i18n';
+import { syncNow } from '@/lib/sync';
 import type { Moisture } from '@/lib/zones';
 import { colors, fonts, radius } from '@/theme';
 
@@ -60,6 +61,7 @@ export default function CheckIn() {
       moisture,
       source: 'finger',
     });
+    syncNow(); // Upload now if there is signal; otherwise it waits on the phone.
     router.replace({
       pathname: '/saved',
       params: {
