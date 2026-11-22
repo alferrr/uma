@@ -98,8 +98,7 @@ export default function SignIn() {
         style={styles.forgot}
         hitSlop={10}
         accessibilityRole="button"
-        // Not designed yet (product.md §6); left as a visible, inert affordance.
-        onPress={() => {}}
+        onPress={() => router.push('/forgot-password')}
       >
         <Text style={styles.forgotText}>Forgot password?</Text>
       </Pressable>

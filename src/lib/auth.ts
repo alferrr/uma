@@ -78,6 +78,28 @@ export async function updateName(name: string) {
   current = { ...current, name: clean };
 }
 
+/** Email a 6-digit reset code (the Reset Password email template must include {{ .Token }}). */
+export async function sendResetCode(email: string) {
+  if (!supabase) throw new Error('No backend');
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+  if (error) throw error;
+}
+
+/** Check the emailed code, set the new password and sign in. */
+export async function resetWithCode(email: string, code: string, password: string) {
+  if (!supabase) throw new Error('No backend');
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: email.trim(),
+    token: code.trim(),
+    type: 'recovery',
+  });
+  if (error || !data.user) throw Object.assign(error ?? new Error('No user'), { badCode: true });
+  const updated = await supabase.auth.updateUser({ password });
+  if (updated.error) throw updated.error;
+  current = await withProfile(data.user, email);
+  return current;
+}
+
 export async function signIn(contact: string, password: string): Promise<User> {
   if (!supabase) {
     await wait(600);
