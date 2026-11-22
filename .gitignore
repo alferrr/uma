@@ -43,3 +43,6 @@ yarn-error.*
 # local agent config
 CLAUDE.md
 .claude/
+
+# local notes
+features.md
