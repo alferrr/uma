@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GreenStripes } from '@/components/art';
 import { AuthLayout } from '@/components/AuthLayout';
 import { LeafLogo, WifiIcon } from '@/components/icons';
-import { PillButton } from '@/components/PillButton';
+import { PrimaryButton } from '@/components/PrimaryButton';
 import { TextField, type TextFieldHandle } from '@/components/TextField';
 import { isEmailOrPhone, signIn } from '@/lib/auth';
 import { colors, fonts } from '@/theme';
@@ -108,7 +108,7 @@ export default function SignIn() {
           {errors.form}
         </Text>
       )}
-      <PillButton label="Sign in" onPress={submit} loading={loading} />
+      <PrimaryButton label="Sign in" onPress={submit} loading={loading} />
 
       <View style={styles.note}>
         <WifiIcon />

@@ -1,83 +1,132 @@
 import { BlurView } from 'expo-blur';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  PanResponder,
+  Platform,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
 
 import { colors, fonts, radius } from '@/theme';
 import { ArrowRight, Chevrons } from './icons';
 
+const KNOB = 54;
+const PAD = 7;
+
 type Props = {
   label: string;
-  onPress: () => void;
-  /** `glass` sits over imagery (Welcome); `solid` is the green action on sheets. */
-  variant?: 'solid' | 'glass';
-  loading?: boolean;
-  disabled?: boolean;
+  onComplete: () => void;
 };
 
-/** Rounded pill with a white arrow circle and `>>>`, from the Uma design. */
-export function PillButton({ label, onPress, variant = 'solid', loading, disabled }: Props) {
-  const glass = variant === 'glass';
-  const inactive = disabled || loading;
+/**
+ * Frosted slide-to-continue pill. Drag the white circle across, or tap it
+ * (and use the standard accessibility activate action) to continue.
+ */
+export function SlideButton({ label, onComplete }: Props) {
+  const [width, setWidth] = useState(0);
+  const completeRef = useRef(onComplete);
+  useEffect(() => {
+    completeRef.current = onComplete;
+  }, [onComplete]);
+
+  // All gesture state lives in one lazily-created object. completeRef is only read after
+  // the animation finishes, never during render; the lint rule can't see through the closure.
+  // eslint-disable-next-line react-hooks/refs
+  const [slider] = useState(() => {
+    const x = new Animated.Value(0);
+    let max = 0;
+    let done = false;
+
+    const finish = () => {
+      if (done) return;
+      done = true;
+      Animated.timing(x, { toValue: max, duration: 120, useNativeDriver: true }).start(() => {
+        completeRef.current();
+        // Reset so the slider is ready again if the user navigates back.
+        setTimeout(() => {
+          x.setValue(0);
+          done = false;
+        }, 400);
+      });
+    };
+    const back = () => Animated.spring(x, { toValue: 0, useNativeDriver: true }).start();
+
+    const pan = PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, g) => x.setValue(Math.min(Math.max(g.dx, 0), max)),
+      onPanResponderRelease: (_, g) => {
+        const tapped = Math.abs(g.dx) < 6 && Math.abs(g.dy) < 6;
+        if (tapped || g.dx > max * 0.7) finish();
+        else back();
+      },
+      onPanResponderTerminate: back,
+    });
+
+    return { x, pan, finish, setMax: (w: number) => (max = Math.max(0, w - KNOB - PAD * 2)) };
+  });
+
+  function onLayout(e: LayoutChangeEvent) {
+    const w = e.nativeEvent.layout.width;
+    setWidth(w);
+    slider.setMax(w);
+  }
+
+  const labelOpacity = slider.x.interpolate({
+    inputRange: [0, Math.max(1, width * 0.45)],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
 
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={inactive}
+    <View
+      onLayout={onLayout}
+      style={styles.track}
+      accessible
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled: !!inactive, busy: !!loading }}
-      style={({ pressed }) => [
-        styles.base,
-        glass ? styles.glass : styles.solid,
-        pressed && styles.pressed,
-        disabled && styles.disabled,
-      ]}
+      accessibilityHint="Double tap to continue"
+      onAccessibilityTap={slider.finish}
     >
-      {glass && Platform.OS === 'ios' && (
-        <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
-      )}
-      <View style={styles.circle}>
-        {loading ? <ActivityIndicator color={colors.green} /> : <ArrowRight />}
-      </View>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.chevrons}>
+      {Platform.OS === 'ios' && <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />}
+      <Animated.Text style={[styles.label, { opacity: labelOpacity }]}>{label}</Animated.Text>
+      <View style={styles.chevrons} pointerEvents="none">
         <Chevrons />
       </View>
-    </Pressable>
+      <Animated.View style={[styles.knob, { transform: [{ translateX: slider.x }] }]} {...slider.pan.panHandlers}>
+        <ArrowRight />
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  base: {
-    height: 68,
+  track: {
+    height: KNOB + PAD * 2,
     borderRadius: radius.pill,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 7,
+    justifyContent: 'center',
     overflow: 'hidden',
-  },
-  solid: { backgroundColor: colors.green },
-  glass: {
-    // Android/web fallback; iOS draws a real blur underneath.
     backgroundColor: Platform.OS === 'ios' ? 'rgba(10,50,24,0.35)' : 'rgba(10,50,24,0.6)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.35)',
   },
-  pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
-  disabled: { opacity: 0.5 },
-  circle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+  knob: {
+    position: 'absolute',
+    left: PAD,
+    width: KNOB,
+    height: KNOB,
+    borderRadius: KNOB / 2,
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
-    flex: 1,
     textAlign: 'center',
     color: colors.white,
     fontFamily: fonts.medium,
     fontSize: 19,
   },
-  chevrons: { width: 54, alignItems: 'center' },
+  chevrons: { position: 'absolute', right: PAD + 10 },
 });

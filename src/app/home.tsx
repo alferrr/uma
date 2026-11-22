@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LeafLogo } from '@/components/icons';
-import { PillButton } from '@/components/PillButton';
+import { PrimaryButton } from '@/components/PrimaryButton';
 import { getUser, signOut } from '@/lib/auth';
 import { colors, fonts } from '@/theme';
 
@@ -26,7 +26,7 @@ export default function HomePlaceholder() {
         come next.
       </Text>
       <View style={styles.cta}>
-        <PillButton
+        <PrimaryButton
           label="Sign out"
           onPress={async () => {
             await signOut();

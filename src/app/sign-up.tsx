@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GreenStripes, SunsetField } from '@/components/art';
 import { AuthLayout } from '@/components/AuthLayout';
 import { ChevronLeft } from '@/components/icons';
-import { PillButton } from '@/components/PillButton';
+import { PrimaryButton } from '@/components/PrimaryButton';
 import { TextField, type TextFieldHandle } from '@/components/TextField';
 import { isEmailOrPhone, signUp, type Role } from '@/lib/auth';
 import { colors, fonts } from '@/theme';
@@ -153,7 +153,7 @@ export default function SignUp() {
           {errors.form}
         </Text>
       )}
-      <PillButton label="Create account" onPress={submit} loading={loading} />
+      <PrimaryButton label="Create account" onPress={submit} loading={loading} />
     </AuthLayout>
   );
 }

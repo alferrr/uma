@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FieldRows, GreenStripes } from '@/components/art';
 import { LeafLogo } from '@/components/icons';
-import { PillButton } from '@/components/PillButton';
+import { SlideButton } from '@/components/SlideButton';
 import { colors, fonts } from '@/theme';
 
 /** Screen 1 · Welcome */
@@ -40,7 +40,7 @@ export default function Welcome() {
       </View>
 
       <View style={[styles.cta, { paddingBottom: insets.bottom + 20 }]}>
-        <PillButton variant="glass" label="Get Started" onPress={() => router.push('/sign-in')} />
+        <SlideButton label="Get Started" onComplete={() => router.push('/sign-in')} />
       </View>
     </View>
   );
