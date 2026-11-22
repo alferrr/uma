@@ -1,9 +1,10 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CyclingTitle } from '@/components/CyclingTitle';
 import { CheckIcon, LeafLogo } from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { setLanguage, STRINGS, useLanguage, type Lang } from '@/lib/i18n';
@@ -15,17 +16,22 @@ const OPTIONS: { lang: Lang; short: string; name: string; sample: string }[] = [
   { lang: 'tl', short: 'TL', name: 'Tagalog', sample: 'Bantayan ang bawat halaman' },
 ];
 
-/** Screen 4 · Language. Shown after first sign-in, and from the account menu. */
+/**
+ * Screen 4 · Language. Shown right after Get Started (`onboarding=1`), and again
+ * from Profile. The title cycles through English, Bisaya and Tagalog.
+ */
 export default function Language() {
   const insets = useSafeAreaInsets();
+  const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
   const saved = useLanguage();
   const [lang, setLang] = useState<Lang>(saved ?? 'en');
-  // Preview the headline in the language being picked.
+  // The button speaks the language being picked.
   const t = STRINGS[lang];
 
   function done() {
     setLanguage(lang);
-    if (router.canGoBack() && saved) router.back();
+    if (onboarding) router.push('/sign-in');
+    else if (router.canGoBack()) router.back();
     else router.replace('/home');
   }
 
@@ -37,11 +43,7 @@ export default function Language() {
         showsVerticalScrollIndicator={false}
       >
         <LeafLogo size={54} />
-        <Text style={styles.title} accessibilityRole="header">
-          {t.chooseYour}
-          {'\n'}
-          <Text style={styles.titleStrong}>{t.language}</Text>
-        </Text>
+        <CyclingTitle />
         <Text style={styles.sub}>Pilia ang pinulongan · Piliin ang wika</Text>
 
         <View style={styles.list} accessibilityRole="radiogroup">
@@ -54,7 +56,11 @@ export default function Language() {
                 accessibilityRole="radio"
                 accessibilityState={{ checked: on, selected: on }}
                 accessibilityLabel={o.name}
-                style={({ pressed }) => [styles.option, on && styles.optionOn, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.option,
+                  on && styles.optionOn,
+                  pressed && styles.pressed,
+                ]}
               >
                 <View style={[styles.badge, on && styles.badgeOn]}>
                   <Text style={[styles.badgeText, on && styles.badgeTextOn]}>{o.short}</Text>
@@ -84,15 +90,6 @@ export default function Language() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: 24, paddingBottom: 24 },
-  title: {
-    marginTop: 22,
-    fontFamily: fonts.regular,
-    fontSize: 38,
-    lineHeight: 46,
-    color: colors.text,
-    letterSpacing: -0.6,
-  },
-  titleStrong: { fontFamily: fonts.bold, color: colors.green },
   sub: { marginTop: 8, fontFamily: fonts.regular, fontSize: 15, color: colors.text },
   list: { marginTop: 28, gap: 14 },
   option: {
@@ -137,6 +134,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   radioOn: { backgroundColor: colors.white, borderColor: colors.white },
-  note: { marginTop: 22, textAlign: 'center', fontFamily: fonts.regular, fontSize: 14, color: colors.muted },
+  note: {
+    marginTop: 22,
+    textAlign: 'center',
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.muted,
+  },
   cta: { paddingHorizontal: 24, paddingTop: 8 },
 });

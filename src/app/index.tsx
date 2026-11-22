@@ -50,7 +50,7 @@ export default function Welcome() {
       </View>
 
       <View style={[styles.cta, { paddingBottom: insets.bottom + 20 }]}>
-        <SlideButton label="Get Started" onComplete={() => router.push('/sign-in')} />
+        <SlideButton label="Get Started" onComplete={() => router.push('/language?onboarding=1')} />
       </View>
     </View>
   );
