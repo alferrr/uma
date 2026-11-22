@@ -48,6 +48,7 @@ export default function Profile() {
   const [nameMsg, setNameMsg] = useState<{ text: string; ok: boolean }>();
   const [savingName, setSavingName] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncFailed, setSyncFailed] = useState(false);
 
   const changed = name.trim() !== (user?.name ?? '');
 
@@ -69,7 +70,7 @@ export default function Profile() {
 
   async function sync() {
     setSyncing(true);
-    await syncNow();
+    setSyncFailed(!(await syncNow()));
     setSyncing(false);
   }
 
@@ -155,7 +156,9 @@ export default function Profile() {
       <View style={styles.card}>
         <View style={styles.syncRow}>
           <SyncIcon size={22} color={colors.green} />
-          <Text style={styles.syncText}>{pending === 0 ? t.allSynced : t.notSynced(pending)}</Text>
+          <Text style={[styles.syncText, syncFailed && styles.syncError]}>
+            {syncFailed ? t.syncFailed : pending === 0 ? t.allSynced : t.notSynced(pending)}
+          </Text>
           <Pressable
             onPress={sync}
             disabled={syncing}
@@ -291,6 +294,7 @@ const styles = StyleSheet.create({
   navValue: { maxWidth: '45%', fontFamily: fonts.regular, fontSize: 14, color: colors.muted },
   syncRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, paddingLeft: 18 },
   syncText: { flex: 1, fontFamily: fonts.regular, fontSize: 15, color: colors.text },
+  syncError: { color: colors.danger },
   syncBtn: {
     height: 38,
     paddingHorizontal: 16,
