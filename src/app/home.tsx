@@ -23,16 +23,16 @@ import {
   SproutIcon,
 } from '@/components/icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
-import { SunsetPanel } from '@/components/SunsetPanel';
+import { LivePill, SunsetPanel } from '@/components/SunsetPanel';
 import { WeatherCard } from '@/components/WeatherCard';
 import { ZoneCard } from '@/components/ZoneCard';
 import { getUser } from '@/lib/auth';
-import { useCurrentFarm, useZones } from '@/lib/db';
+import { useCurrentFarm, useReadings, useZones } from '@/lib/db';
 import { canManageFarm } from '@/lib/farms';
 import { useLanguage, useT } from '@/lib/i18n';
 import { syncNow } from '@/lib/sync';
 import { refreshWeather } from '@/lib/weather';
-import { byAttention, moistureFromPercent, READINGS, toneFor, type Status } from '@/lib/zones';
+import { byAttention, moistureFromPercent, toneFor, type Status } from '@/lib/zones';
 import { colors, fonts } from '@/theme';
 
 type Filter = 'all' | Exclude<Status, 'ok'>;
@@ -63,7 +63,7 @@ export default function Home() {
 
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
-  const [hour, setHour] = useState(2);
+  const [picked, setPicked] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Pull zones and push saved check-ins when Home opens.
@@ -87,8 +87,18 @@ export default function Home() {
     year: 'numeric',
   });
 
-  const reading = READINGS[Math.min(hour, READINGS.length - 1)];
+  // The zone whose sensor reported most recently drives the moisture card.
+  const sensorZone = zones
+    .filter((z) => z.reading)
+    .sort((a, b) => b.reading!.readAt.localeCompare(a.reading!.readAt))[0];
+  const readings = useReadings(sensorZone?.id);
+  const readingIndex =
+    picked === null ? readings.length - 1 : Math.min(picked, readings.length - 1);
+  const reading = readings[readingIndex];
   const level = reading ? moistureFromPercent(reading.percent) : null;
+  const hourOf = (iso: string) => String(new Date(iso).getHours()).padStart(2, '0');
+  const clock = (iso: string) =>
+    new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -167,21 +177,27 @@ export default function Home() {
         {reading && level && (
           <View style={styles.moistureWrap}>
             <SunsetPanel
-              items={READINGS.map((r) => ({
-                key: r.hour,
-                hour: r.hour,
+              items={readings.map((r) => ({
+                key: r.readAt,
+                hour: hourOf(r.readAt),
                 icon: <DropIcon size={20} color={colors.white} />,
-                value: `${r.percent}%`,
-                label: `${r.hour}:00, ${r.percent}%`,
+                value: `${Math.round(r.percent)}%`,
+                label: `${hourOf(r.readAt)}:00, ${Math.round(r.percent)}%`,
               }))}
-              selected={Math.min(hour, READINGS.length - 1)}
-              onSelect={setHour}
+              selected={readingIndex}
+              onSelect={setPicked}
               date={today}
-              big={`${reading.percent}%`}
+              big={`${Math.round(reading.percent)}%`}
               statusIcon={<DropIcon size={16} color="#F3D27A" />}
               statusText={t.moistureLabel[level]}
               footerIcon={<SproutIcon size={16} color={colors.white} />}
-              footerText={`${t.soilMoisture} · POT-01`}
+              footerText={`${t.soilMoisture} · ${sensorZone!.code}`}
+              footerRight={
+                <LivePill
+                  tone={reading.sample ? 'sample' : 'live'}
+                  text={reading.sample ? t.sampleData : `${t.sensor} · ${clock(reading.readAt)}`}
+                />
+              }
             />
           </View>
         )}

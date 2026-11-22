@@ -97,10 +97,25 @@ export function SunsetPanel(p: Props) {
 }
 
 /** Frosted pill with a green wifi dot, like "Sensor · 10:40 AM" in the design. */
-export function LivePill({ text, offline }: { text: string; offline?: boolean }) {
+/** `sample` marks seeded demo readings, with a grey dot so they never look live. */
+export function LivePill({
+  text,
+  offline,
+  tone,
+}: {
+  text: string;
+  offline?: boolean;
+  tone?: 'live' | 'sample';
+}) {
   return (
     <View style={styles.live}>
-      <View style={[styles.liveDot, offline && { backgroundColor: colors.orange }]}>
+      <View
+        style={[
+          styles.liveDot,
+          offline && { backgroundColor: colors.orange },
+          tone === 'sample' && { backgroundColor: '#8C8C86' },
+        ]}
+      >
         <WifiIcon size={14} color={colors.white} />
       </View>
       <Text style={styles.liveText}>{text}</Text>
