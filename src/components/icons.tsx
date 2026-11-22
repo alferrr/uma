@@ -198,3 +198,21 @@ export const SyncIcon = (p: IconProps) => (
 export const LogOutIcon = (p: IconProps) => (
   <StrokeIcon {...p} d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9" />
 );
+export const PencilIcon = (p: IconProps) => (
+  <StrokeIcon {...p} d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" />
+);
+export const UsersIcon = (p: IconProps) => (
+  <StrokeIcon
+    {...p}
+    d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2.5 19.5a6.5 6.5 0 0 1 13 0M16 4.3a3.5 3.5 0 0 1 0 6.4M18.5 14a6.5 6.5 0 0 1 3 5.5"
+  />
+);
+export const HistoryIcon = (p: IconProps) => (
+  <StrokeIcon {...p} d="M3.5 12a8.5 8.5 0 1 0 2.5-6M3 4v4h4M12 8v4l3 2" />
+);
+export const ZoomInIcon = (p: IconProps) => (
+  <StrokeIcon {...p} d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM16 16l4.5 4.5M11 8v6M8 11h6" />
+);
+export const ZoomOutIcon = (p: IconProps) => (
+  <StrokeIcon {...p} d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM16 16l4.5 4.5M8 11h6" />
+);
