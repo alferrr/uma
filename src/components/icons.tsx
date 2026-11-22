@@ -177,3 +177,24 @@ export const UmbrellaIcon = (p: IconProps) => (
 export const MoonIcon = (p: IconProps) => (
   <StrokeIcon {...p} d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z" />
 );
+export const TrashIcon = (p: IconProps) => (
+  <StrokeIcon
+    {...p}
+    d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"
+  />
+);
+export const UserIcon = (p: IconProps) => (
+  <StrokeIcon {...p} d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4.5 20a7.5 7.5 0 0 1 15 0" />
+);
+export const GlobeIcon = (p: IconProps) => (
+  <StrokeIcon
+    {...p}
+    d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM3.5 12h17M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z"
+  />
+);
+export const SyncIcon = (p: IconProps) => (
+  <StrokeIcon {...p} d="M20 11a8 8 0 0 0-14.5-3.5M4 4v4h4M4 13a8 8 0 0 0 14.5 3.5M20 20v-4h-4" />
+);
+export const LogOutIcon = (p: IconProps) => (
+  <StrokeIcon {...p} d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9" />
+);
