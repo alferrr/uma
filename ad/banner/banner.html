@@ -54,18 +54,16 @@
   .phone img { display: block; width: 100%; border-radius: 24.7mm; }
 
   /* 4 — what it does, as Uma option cards */
-  .features { top: 1478mm; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14mm; }
-  .card {
-    border: 2.6mm solid var(--green); border-radius: 14mm; background: #fff;
-    padding: 16mm 8mm 14mm; text-align: center; position: relative; overflow: hidden;
+  .steps {
+    top: 1478mm; display: grid; grid-template-columns: 1fr 1fr 1fr;
+    border-top: .8mm solid var(--text);
   }
-  .card .ico {
-    width: 40mm; height: 40mm; border-radius: 50%; background: var(--green);
-    display: flex; align-items: center; justify-content: center; margin: 0 auto 9mm;
-  }
-  .card .ico svg { width: 22mm; height: 22mm; }
-  .card .ghost { position: absolute; left: -10mm; bottom: -12mm; width: 70mm; height: 70mm; opacity: .1; }
-  .card b { display: block; color: var(--green); font-size: 22mm; font-weight: 700; letter-spacing: -.5mm; line-height: 1.05; }
+  .step { padding: 9mm 9mm 0; border-left: .5mm solid #D9D9D4; }
+  .step:first-child { border-left: 0; padding-left: 0; }
+  .step .n { font-size: 20mm; font-weight: 600; color: var(--green); letter-spacing: -.3mm; }
+  .step h3 { margin: 2mm 0 7mm; font-size: 30mm; font-weight: 700; letter-spacing: -.8mm; line-height: 1; }
+  .step img { display: block; height: 36mm; max-width: 100%; border-radius: 5mm; }
+  .step img.qr { height: 52mm; border-radius: 4mm; box-shadow: 0 2mm 6mm rgba(0,0,0,.12); transform: rotate(-4deg); }
 
   /* 5 — tagline and languages */
   .tagline { top: 1625mm; text-align: center; }
@@ -113,21 +111,22 @@
     </div>
   </div>
 
-  <div class="safe features">
-    <div class="card">
-      <svg class="ghost" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" fill="none" stroke="#16923F" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      <b>Scan the<br>zone's QR</b>
+  <!-- How it works: three real steps, each with a real piece of the app. -->
+  <div class="safe steps">
+    <div class="step">
+      <div class="n">01</div>
+      <h3>Scan the stake</h3>
+      <img class="qr" src="../assets/crops/qr-label.png" alt="Printed POT-01 zone QR label">
     </div>
-    <div class="card">
-      <svg class="ghost" viewBox="0 0 24 24"><path d="M12 3.5c3.6 4.3 5.5 7.4 5.5 10a5.5 5.5 0 0 1-11 0c0-2.6 1.9-5.7 5.5-10Z" fill="none" stroke="#16923F" stroke-width="1.6"/></svg>
-      <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3.5c3.6 4.3 5.5 7.4 5.5 10a5.5 5.5 0 0 1-11 0c0-2.6 1.9-5.7 5.5-10Z" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/></svg></div>
-      <b>Okay or<br>needs water</b>
+    <div class="step">
+      <div class="n">02</div>
+      <h3>Mark its status</h3>
+      <img src="../assets/crops/status-water.png" alt="Needs water option">
     </div>
-    <div class="card">
-      <svg class="ghost" viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 16a5 5 0 0 1 6.8 0M3 3l18 18" fill="none" stroke="#16923F" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <div class="ico"><svg viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 16a5 5 0 0 1 6.8 0M3 3l18 18" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div>
-      <b>Even with<br>no signal</b>
+    <div class="step">
+      <div class="n">03</div>
+      <h3>Sync later</h3>
+      <img src="../assets/crops/sync.png" alt="All records synced">
     </div>
   </div>
 
