@@ -12,7 +12,7 @@
 
 ## Layout and print notes
 
-- All text sits at least 45 mm inside the trim. The lowest text ends about 1790 mm from the
+- All text sits at least 45 mm inside the trim. The lowest text ends about 1817 mm from the
   top, clear of the bottom ~160 mm that disappears into the stand's base.
 - App screens are real simulator captures (1260 px wide) printed 190 mm wide: about 170 dpi,
   sharp at booth viewing distance.

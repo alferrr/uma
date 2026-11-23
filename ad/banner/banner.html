@@ -39,14 +39,14 @@
 
   /* 3 — green panel with a wave and the fan of real screens */
   .green {
-    position: absolute; left: 0; right: 0; top: 745mm; height: 700mm; background: var(--green);
+    position: absolute; left: 0; right: 0; top: 745mm; height: 590mm; background: var(--green);
   }
   .green .wave { position: absolute; left: 0; top: -1mm; width: 860mm; height: 70mm; }
   .green h2 {
     position: absolute; left: 45mm; right: 45mm; top: 95mm; margin: 0; text-align: center;
     color: #fff; font-size: 70mm; font-weight: 600; letter-spacing: -1.8mm;
   }
-  .fan { position: absolute; left: 0; right: 0; top: 195mm; height: 500mm; }
+  .fan { position: absolute; left: 0; right: 0; top: 175mm; height: 400mm; transform: scale(.82); transform-origin: 50% 0; }
   .phone {
     position: absolute; width: 190mm; padding: 6.6mm; border-radius: 31mm; background: #1B1B1A;
     box-shadow: 0 12mm 30mm rgba(0,0,0,.28);
@@ -54,24 +54,24 @@
   .phone img { display: block; width: 100%; border-radius: 24.7mm; }
 
   /* 4 — what it does, as Uma option cards */
-  .steps {
-    top: 1478mm; display: grid; grid-template-columns: 1fr 1fr 1fr;
-    border-top: .8mm solid var(--text);
+  .steps { top: 1352mm; border-top: .8mm solid var(--text); }
+  .step {
+    display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12mm;
+    padding: 8mm 0; border-bottom: .5mm solid #D9D9D4; min-height: 78mm;
   }
-  .step { padding: 9mm 9mm 0; border-left: .5mm solid #D9D9D4; }
-  .step:first-child { border-left: 0; padding-left: 0; }
-  .step .n { font-size: 20mm; font-weight: 600; color: var(--green); letter-spacing: -.3mm; }
-  .step h3 { margin: 2mm 0 7mm; font-size: 30mm; font-weight: 700; letter-spacing: -.8mm; line-height: 1; }
-  .step img { display: block; height: 36mm; max-width: 100%; border-radius: 5mm; }
-  .step img.qr { height: 52mm; border-radius: 4mm; box-shadow: 0 2mm 6mm rgba(0,0,0,.12); transform: rotate(-4deg); }
+  .step .n { font-size: 24mm; font-weight: 600; color: var(--green); line-height: 1; }
+  .step h3 { margin: 3mm 0 0; font-size: 50mm; font-weight: 700; letter-spacing: -1.2mm; line-height: 1; }
+  .step img { display: block; height: 64mm; border-radius: 9mm; }
+  .step img.pillimg { border-radius: 999px; }
+  .step img.qr { height: 96mm; border-radius: 6mm; box-shadow: 0 3mm 9mm rgba(0,0,0,.14); transform: rotate(-4deg); margin-right: 8mm; }
 
   /* 5 — tagline and languages */
-  .tagline { top: 1625mm; text-align: center; }
-  .tagline .a { font-size: 44mm; font-weight: 500; letter-spacing: -1mm; line-height: 1.1; }
-  .tagline .b { font-size: 60mm; font-weight: 700; color: var(--green); letter-spacing: -1.8mm; line-height: 1.05; }
+  .tagline { top: 1688mm; text-align: center; }
+  .tagline .a { font-size: 34mm; font-weight: 500; letter-spacing: -1mm; line-height: 1.1; }
+  .tagline .b { font-size: 48mm; font-weight: 700; color: var(--green); letter-spacing: -1.8mm; line-height: 1.05; }
   .pill {
-    display: inline-block; margin-top: 18mm; padding: 6mm 18mm; border-radius: 999px;
-    background: var(--green); color: #fff; font-size: 21mm; font-weight: 500;
+    display: inline-block; margin-top: 10mm; padding: 5mm 16mm; border-radius: 999px;
+    background: var(--green); color: #fff; font-size: 19mm; font-weight: 500;
   }
 </style>
 </head>
@@ -114,18 +114,15 @@
   <!-- How it works: three real steps, each with a real piece of the app. -->
   <div class="safe steps">
     <div class="step">
-      <div class="n">01</div>
-      <h3>Scan the stake</h3>
+      <div><div class="n">01</div><h3>Scan the stake</h3></div>
       <img class="qr" src="../assets/crops/qr-label.png" alt="Printed POT-01 zone QR label">
     </div>
     <div class="step">
-      <div class="n">02</div>
-      <h3>Mark its status</h3>
-      <img src="../assets/crops/status-water.png" alt="Needs water option">
+      <div><div class="n">02</div><h3>Mark its status</h3></div>
+      <img class="pillimg" src="../assets/crops/status-water.png" alt="Needs water option">
     </div>
     <div class="step">
-      <div class="n">03</div>
-      <h3>Sync later</h3>
+      <div><div class="n">03</div><h3>Sync later</h3></div>
       <img src="../assets/crops/sync.png" alt="All records synced">
     </div>
   </div>
