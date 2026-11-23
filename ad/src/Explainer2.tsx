@@ -17,13 +17,14 @@ import {
   useVideoConfig,
 } from 'remotion';
 
+import { Logo } from './components/Logo';
 import { easeIn, easeInOut, easeOut, rise } from './ease';
 import { loadFonts } from './fonts';
 import { C, FONT, SHOT, type Layout } from './theme';
 
 loadFonts();
 
-export const TOTAL_FRAMES_2 = 800;
+export const TOTAL_FRAMES_2 = 840;
 
 const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 const lerp = (f: number, a: number[], b: number[], easing = easeInOut) =>
@@ -32,31 +33,33 @@ const lerp = (f: number, a: number[], b: number[], easing = easeInOut) =>
 // Timeline (30 fps), matched to inspo2 at 10 fps.
 const T = {
   plants: 0,
-  drying: 14,
-  problem: 32,
-  toCheck: 54,
-  phoneIn: 84,
-  phoneSettled: 124,
-  headline: 118,
-  props: 128,
-  burst: 178,
-  ribbon1: 212,
-  pan: 288,
-  ribbon2: 286,
-  wipe: 320,
-  fanIn: 334,
-  wave: 380,
-  fanWords: 400,
-  fanOut: 466,
-  slide: 470,
-  slideWords: 494,
-  scan: 575,
-  check: 593,
-  done: 612,
-  shrink: 628,
-  iconIn: 648,
-  toEnd: 672,
-  endText: 690,
+  drying: 22,
+  out: 44,
+  zones: 66,
+  toCheck: 90,
+  toCheckOut: 118,
+  phoneIn: 124,
+  phoneSettled: 164,
+  headline: 158,
+  props: 168,
+  burst: 218,
+  ribbon1: 252,
+  pan: 328,
+  ribbon2: 326,
+  wipe: 360,
+  fanIn: 374,
+  wave: 420,
+  fanWords: 440,
+  fanOut: 506,
+  slide: 510,
+  slideWords: 534,
+  scan: 615,
+  check: 633,
+  done: 652,
+  shrink: 668,
+  iconIn: 688,
+  toEnd: 712,
+  endText: 730,
 };
 
 const FAN = ['home.png', 'map.png', 'zone.png', 'checkin.png', 'profile-synced.png'];
@@ -122,6 +125,7 @@ function Punch({
   size,
   shrinkTo = 1,
   weight = 700,
+  exitAt,
 }: {
   text: string;
   from: number;
@@ -130,13 +134,16 @@ function Punch({
   size: number;
   shrinkTo?: number;
   weight?: number;
+  exitAt?: number;
 }) {
   const f = useCurrentFrame();
   if (f < from || f >= to) return null;
-  const y = (t: number) => lerp(t, [from, from + 6], [size * 1.1, 0], easeOut);
+  const ex = (t: number) =>
+    exitAt === undefined ? 0 : lerp(t, [exitAt, exitAt + 12], [0, 1], easeIn);
+  const y = (t: number) => lerp(t, [from, from + 6], [size * 1.1, 0], easeOut) - ex(t) * size * 1.4;
   const s = lerp(f, [from + 8, to], [1, shrinkTo]);
   return (
-    <AbsoluteFill style={{ background: green ? C.green : C.white }}>
+    <AbsoluteFill style={{ background: green ? `rgba(22,146,63,${1 - ex(f)})` : C.white }}>
       <Trail dy={y(f) - y(f - 1)}>
         <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
           <div
@@ -149,7 +156,8 @@ function Punch({
               color: green ? C.white : C.text,
               textAlign: 'center',
               whiteSpace: 'pre-line',
-              transform: `translateY(${y(f)}px) scale(${s})`,
+              transform: `translateY(${y(f)}px) scale(${s * (1 - ex(f) * 0.4)})`,
+              opacity: 1 - ex(f),
             }}
           >
             {text}
@@ -329,7 +337,7 @@ function OptionCard({
 
 function PhoneBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   const f = useCurrentFrame();
-  if (f < T.phoneIn || f > T.burst + 16) return null;
+  if (f < T.toCheckOut || f > T.burst + 16) return null;
   const pw = L ? 390 : 560;
   const ph = (pw * SHOT.h) / SHOT.w;
   // Dolly: the phone starts huge and close at the bottom, tilted, and settles.
@@ -372,6 +380,14 @@ function PhoneBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   ];
   return (
     <AbsoluteFill>
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: C.white,
+          opacity: lerp(f, [T.toCheckOut, T.toCheckOut + 10], [0, 1]),
+        }}
+      />
       <div style={{ position: 'absolute', top: L ? 54 : 170, left: 0, right: 0, opacity: 1 - out }}>
         <DropWords text="Uma keeps track." start={T.headline} size={L ? 92 : 96} color={C.green} />
       </div>
@@ -409,22 +425,22 @@ function PhoneBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
               opacity: Math.min(1, t * 2) * (1 - out),
             }}
           >
-            {Math.abs(dx) > 5 &&
-              [1, 2, 3].map((k) => (
-                <Img
-                  key={k}
-                  src={staticFile(pr.src)}
-                  style={{
-                    position: 'absolute',
-                    width: pr.w,
-                    left: -dx * k * 0.5,
-                    opacity: 0.25 / k,
-                    borderRadius: 999,
-                    transform: `rotate(${pr.rot}deg)`,
-                  }}
-                />
-              ))}
+            {[1, 2, 3].map((k) => (
+              <Img
+                key={k}
+                src={staticFile(pr.src)}
+                style={{
+                  position: 'absolute',
+                  width: pr.w,
+                  left: -dx * k * 0.5,
+                  opacity: Math.abs(dx) > 5 ? 0.25 / k : 0,
+                  borderRadius: 999,
+                  transform: `rotate(${pr.rot}deg)`,
+                }}
+              />
+            ))}
             <Img
+              key="main"
               src={staticFile(pr.src)}
               style={{
                 width: pr.w,
@@ -570,8 +586,6 @@ function FanBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
             top: L ? H * 0.36 : H * 0.36,
             width: pw,
             height: (pw * SHOT.h) / SHOT.w,
-            transformStyle: 'preserve-3d',
-            transform: 'rotateX(18deg)',
           }}
         >
           {FAN.map((src, i) => {
@@ -589,7 +603,7 @@ function FanBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
                   position: 'absolute',
                   inset: 0,
                   zIndex: 10 - Math.abs(d),
-                  transform: `translate3d(${d * pw * (L ? 0.62 : 0.5)}px, ${y + Math.abs(d) * 30}px, ${-Math.abs(d) * 140}px) rotateY(${d * -10}deg) rotateZ(${d * 4}deg)`,
+                  transform: `translate(${d * pw * (L ? 0.7 : 0.52)}px, ${y + Math.abs(d) * 34}px) scale(${1 - Math.abs(d) * 0.1}) rotate(${d * 5}deg)`,
                   filter:
                     Math.abs(v) > 15 ? `blur(${Math.min(12, Math.abs(v) / 10)}px)` : undefined,
                 }}
@@ -763,13 +777,13 @@ function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
           top: cy - h / 2,
           width: w,
           height: h,
-          borderRadius: shrink * tile * 0.23,
+          borderRadius: shrink * tile * 0.5,
           background: C.green,
+          opacity: 1 - icon,
           overflow: 'hidden',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: shrink > 0.9 ? '0 26px 60px rgba(22,146,63,0.28)' : 'none',
         }}
       >
         {Math.abs(up - upPrev) > 5 ? (
@@ -781,10 +795,9 @@ function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
         ) : (
           word
         )}
-        <Img
-          src={staticFile('brand/uma-app-icon.png')}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: icon }}
-        />
+      </div>
+      <div style={{ position: 'absolute', left: cx - tile / 2, top: cy - tile / 2 }}>
+        <Logo size={tile} start={T.iconIn - 4} />
       </div>
       <div
         style={{
@@ -849,31 +862,30 @@ function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
 }
 
 export function Explainer2({ layout }: { layout: Layout }) {
-  const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const L = layout === 'landscape';
   const big = L ? 620 : 330;
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, overflow: 'hidden', fontFamily: FONT }}>
       <Punch text="plants" from={T.plants} to={T.drying} green size={big} />
-      <Punch text="drying" from={T.drying} to={T.problem} green={false} size={big} />
+      <Punch text="drying" from={T.drying} to={T.out} green={false} size={big} />
+      <Punch text="out." from={T.out} to={T.zones} green size={big} />
       <Punch
-        text={'plants drying out,\nbut too many zones'}
-        from={T.problem}
+        text={'but too many\nzones'}
+        from={T.zones}
         to={T.toCheck}
-        green
-        size={L ? 132 : 104}
+        green={false}
+        size={L ? 230 : 150}
       />
-      {f < T.phoneSettled && (
-        <Punch
-          text="to check?"
-          from={T.toCheck}
-          to={T.phoneSettled}
-          green={false}
-          size={L ? 300 : 190}
-          shrinkTo={0.45}
-        />
-      )}
+      <Punch
+        text="to check?"
+        from={T.toCheck}
+        to={T.toCheckOut + 14}
+        green
+        size={L ? 300 : 190}
+        shrinkTo={0.8}
+        exitAt={T.toCheckOut}
+      />
       <PhoneBeat L={L} W={W} H={H} />
       <CardsBeat L={L} W={W} H={H} />
       <FanBeat L={L} W={W} H={H} />
