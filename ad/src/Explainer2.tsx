@@ -588,30 +588,32 @@ function FanBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
             height: (pw * SHOT.h) / SHOT.w,
           }}
         >
-          {FAN.map((src, i) => {
-            const mid = (FAN.length - 1) / 2;
-            const d = i - mid;
-            const s = T.fanIn + Math.abs(d) * 4;
-            const t = lerp(f, [s, s + 18], [0, 1], easeOut);
-            const tp = lerp(f - 1, [s, s + 18], [0, 1], easeOut);
-            const y = (1 - t) * H * 1.1;
-            const v = (tp - t) * H * 1.1;
-            return (
-              <div
-                key={src}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  zIndex: 10 - Math.abs(d),
-                  transform: `translate(${d * pw * (L ? 0.7 : 0.52)}px, ${y + Math.abs(d) * 34}px) scale(${1 - Math.abs(d) * 0.1}) rotate(${d * 5}deg)`,
-                  filter:
-                    Math.abs(v) > 15 ? `blur(${Math.min(12, Math.abs(v) / 10)}px)` : undefined,
-                }}
-              >
-                <Phone src={src} width={pw} />
-              </div>
-            );
-          })}
+          {FAN.map((src, i) => ({ src, i }))
+            .sort((a, b) => Math.abs(b.i - 2) - Math.abs(a.i - 2))
+            .map(({ src, i }) => {
+              const mid = (FAN.length - 1) / 2;
+              const d = i - mid;
+              const s = T.fanIn + Math.abs(d) * 4;
+              const t = lerp(f, [s, s + 18], [0, 1], easeOut);
+              const tp = lerp(f - 1, [s, s + 18], [0, 1], easeOut);
+              const y = (1 - t) * H * 1.1;
+              const v = (tp - t) * H * 1.1;
+              return (
+                <div
+                  key={src}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 10 - Math.abs(d),
+                    transform: `translate(${d * pw * (L ? 0.7 : 0.52)}px, ${y + Math.abs(d) * 34}px) scale(${1 - Math.abs(d) * 0.1}) rotate(${d * 5}deg)`,
+                    filter:
+                      Math.abs(v) > 15 ? `blur(${Math.min(12, Math.abs(v) / 10)}px)` : undefined,
+                  }}
+                >
+                  <Phone src={src} width={pw} />
+                </div>
+              );
+            })}
         </div>
       </AbsoluteFill>
       {wave > 0 && (
@@ -706,8 +708,8 @@ function SlideBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
 function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   const f = useCurrentFrame();
   if (f < T.done) return null;
-  const tile = L ? 320 : 330;
-  const textW = L ? 780 : 0;
+  const tile = L ? 280 : 330;
+  const textW = L ? 1000 : 0;
   const gap = 56;
   const shrink = lerp(f, [T.shrink, T.shrink + 30], [0, 1]);
   const toEnd = lerp(f, [T.toEnd, T.toEnd + 26], [0, 1]);
@@ -824,25 +826,35 @@ function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
             transform: `translateY(${(1 - e1) * 24}px)`,
           }}
         >
-          Watch every plant.
+          Watch your farm
         </div>
         <div
           style={{
-            fontSize: L ? 156 : 150,
+            fontSize: L ? 96 : 96,
             fontWeight: 700,
             color: C.green,
-            letterSpacing: -4,
-            lineHeight: 1,
+            letterSpacing: -3,
+            lineHeight: 1.02,
+            whiteSpace: 'nowrap',
             opacity: e2,
             transform: `translateY(${(1 - e2) * 24}px)`,
           }}
         >
-          Lose less.
+          even with no signal.
         </div>
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: L ? 70 : 140,
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
         <div
           style={{
-            display: 'inline-block',
-            marginTop: 24,
             padding: '14px 34px',
             borderRadius: 999,
             background: C.green,
@@ -851,7 +863,6 @@ function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
             fontWeight: 500,
             opacity: e3,
             transform: `scale(${0.85 + 0.15 * e3})`,
-            transformOrigin: L ? 'left center' : 'center',
           }}
         >
           Cebuano · English · Tagalog
