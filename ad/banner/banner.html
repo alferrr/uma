@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Uma roll-up banner (850 × 2000 mm + 5 mm bleed)</title>
+<style>
+  /* Uma design tokens, same as the app and the ads. */
+  :root { --green:#16923F; --orange:#F7931E; --text:#141414; --muted:#6E6E6A; --panel:#F4F4F1; }
+  @font-face { font-family: Outfit; font-weight: 300; src: url(../assets/fonts/Outfit_300Light.ttf); }
+  @font-face { font-family: Outfit; font-weight: 400; src: url(../assets/fonts/Outfit_400Regular.ttf); }
+  @font-face { font-family: Outfit; font-weight: 500; src: url(../assets/fonts/Outfit_500Medium.ttf); }
+  @font-face { font-family: Outfit; font-weight: 600; src: url(../assets/fonts/Outfit_600SemiBold.ttf); }
+  @font-face { font-family: Outfit; font-weight: 700; src: url(../assets/fonts/Outfit_700Bold.ttf); }
+
+  /* Trim 850 × 2000 mm, plus 5 mm bleed on every side. */
+  @page { size: 860mm 2010mm; margin: 0; }
+  html, body { margin: 0; padding: 0; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .banner {
+    position: relative; width: 860mm; height: 2010mm; overflow: hidden;
+    background: #fff; font-family: Outfit, sans-serif; color: var(--text);
+  }
+  /* Everything readable stays 40 mm inside the trim; the bottom 160 mm goes into the stand. */
+  .safe { position: absolute; left: 45mm; right: 45mm; }
+
+  .ribbons { position: absolute; inset: 0; width: 860mm; height: 2010mm; }
+
+  /* 1 — brand */
+  .brand { top: 85mm; display: flex; align-items: center; gap: 16mm; }
+  .brand img { width: 62mm; height: 62mm; }
+  .brand span { font-size: 64mm; font-weight: 700; letter-spacing: -2mm; line-height: 1; }
+
+  /* 2 — word punches, like the opening of the ad */
+  .punch { top: 205mm; }
+  .punch .big { font-size: 128mm; font-weight: 700; letter-spacing: -5.5mm; line-height: .92; }
+  .punch .big.hl { color: var(--green); }
+  .punch .q { margin-top: 26mm; font-size: 50mm; font-weight: 600; letter-spacing: -1.4mm; line-height: 1.05; }
+
+  /* 3 — green panel with a wave and the fan of real screens */
+  .green {
+    position: absolute; left: 0; right: 0; top: 745mm; height: 700mm; background: var(--green);
+  }
+  .green .wave { position: absolute; left: 0; top: -1mm; width: 860mm; height: 70mm; }
+  .green h2 {
+    position: absolute; left: 45mm; right: 45mm; top: 95mm; margin: 0; text-align: center;
+    color: #fff; font-size: 70mm; font-weight: 600; letter-spacing: -1.8mm;
+  }
+  .fan { position: absolute; left: 0; right: 0; top: 195mm; height: 500mm; }
+  .phone {
+    position: absolute; width: 190mm; padding: 6.6mm; border-radius: 31mm; background: #1B1B1A;
+    box-shadow: 0 12mm 30mm rgba(0,0,0,.28);
+  }
+  .phone img { display: block; width: 100%; border-radius: 24.7mm; }
+
+  /* 4 — what it does, as Uma option cards */
+  .features { top: 1478mm; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14mm; }
+  .card {
+    border: 2.6mm solid var(--green); border-radius: 14mm; background: #fff;
+    padding: 16mm 8mm 14mm; text-align: center; position: relative; overflow: hidden;
+  }
+  .card .ico {
+    width: 40mm; height: 40mm; border-radius: 50%; background: var(--green);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 9mm;
+  }
+  .card .ico svg { width: 22mm; height: 22mm; }
+  .card .ghost { position: absolute; left: -10mm; bottom: -12mm; width: 70mm; height: 70mm; opacity: .1; }
+  .card b { display: block; color: var(--green); font-size: 22mm; font-weight: 700; letter-spacing: -.5mm; line-height: 1.05; }
+
+  /* 5 — tagline and languages */
+  .tagline { top: 1625mm; text-align: center; }
+  .tagline .a { font-size: 44mm; font-weight: 500; letter-spacing: -1mm; line-height: 1.1; }
+  .tagline .b { font-size: 60mm; font-weight: 700; color: var(--green); letter-spacing: -1.8mm; line-height: 1.05; }
+  .pill {
+    display: inline-block; margin-top: 18mm; padding: 6mm 18mm; border-radius: 999px;
+    background: var(--green); color: #fff; font-size: 21mm; font-weight: 500;
+  }
+</style>
+</head>
+<body>
+<div class="banner">
+
+  <!-- Faint green ribbons, as on the ad's end card. -->
+  <svg class="ribbons" viewBox="0 0 860 2010" preserveAspectRatio="none">
+    <path d="M 700 -40 C 690 160, 860 230, 920 260" fill="none" stroke="rgba(22,146,63,.10)" stroke-width="70" stroke-linecap="round"/>
+    <path d="M -60 560 C 90 600, 120 700, 80 790" fill="none" stroke="rgba(22,146,63,.10)" stroke-width="70" stroke-linecap="round"/>
+    <path d="M 900 1560 C 760 1600, 760 1720, 880 1800" fill="none" stroke="rgba(22,146,63,.10)" stroke-width="70" stroke-linecap="round"/>
+  </svg>
+
+  <div class="safe brand">
+    <img src="../assets/brand/uma-logo.svg" alt="Uma logo">
+    <span>Uma</span>
+  </div>
+
+  <div class="safe punch">
+    <div class="big">plants</div>
+    <div class="big hl">drying</div>
+    <div class="big">out.</div>
+    <div class="q">But too many zones<br>to check?</div>
+  </div>
+
+  <div class="green">
+    <svg class="wave" viewBox="0 0 860 70" preserveAspectRatio="none">
+      <path d="M0 0 H860 V30 C 650 70, 430 0, 215 40 S 0 30, 0 30 Z" fill="#fff"/>
+    </svg>
+    <h2>Uma keeps track.</h2>
+    <div class="fan">
+      <div class="phone" style="left: 48mm;  top: 80mm; transform: rotate(-9deg) scale(.82); z-index: 1;"><img src="../assets/screens/home.png" alt=""></div>
+      <div class="phone" style="right: 48mm; top: 80mm; transform: rotate(9deg) scale(.82);  z-index: 1;"><img src="../assets/screens/profile-synced.png" alt=""></div>
+      <div class="phone" style="left: 145mm; top: 34mm; transform: rotate(-5deg) scale(.92); z-index: 2;"><img src="../assets/screens/map.png" alt=""></div>
+      <div class="phone" style="right: 145mm; top: 34mm; transform: rotate(5deg) scale(.92);  z-index: 2;"><img src="../assets/screens/checkin.png" alt=""></div>
+      <div class="phone" style="left: 335mm; top: 0;    z-index: 3;"><img src="../assets/screens/zone.png" alt=""></div>
+    </div>
+  </div>
+
+  <div class="safe features">
+    <div class="card">
+      <svg class="ghost" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" fill="none" stroke="#16923F" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <b>Scan the<br>zone's QR</b>
+    </div>
+    <div class="card">
+      <svg class="ghost" viewBox="0 0 24 24"><path d="M12 3.5c3.6 4.3 5.5 7.4 5.5 10a5.5 5.5 0 0 1-11 0c0-2.6 1.9-5.7 5.5-10Z" fill="none" stroke="#16923F" stroke-width="1.6"/></svg>
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3.5c3.6 4.3 5.5 7.4 5.5 10a5.5 5.5 0 0 1-11 0c0-2.6 1.9-5.7 5.5-10Z" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/></svg></div>
+      <b>Okay or<br>needs water</b>
+    </div>
+    <div class="card">
+      <svg class="ghost" viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 16a5 5 0 0 1 6.8 0M3 3l18 18" fill="none" stroke="#16923F" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 16a5 5 0 0 1 6.8 0M3 3l18 18" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+      <b>Even with<br>no signal</b>
+    </div>
+  </div>
+
+  <div class="safe tagline">
+    <div class="a">Your whole farm,</div>
+    <div class="b">in your pocket.</div>
+    <div class="pill">Cebuano · English · Tagalog</div>
+  </div>
+
+</div>
+</body>
+</html>
