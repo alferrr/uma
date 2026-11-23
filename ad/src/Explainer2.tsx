@@ -24,7 +24,7 @@ import { C, FONT, SHOT, type Layout } from './theme';
 
 loadFonts();
 
-export const TOTAL_FRAMES_2 = 840;
+export const TOTAL_FRAMES_2 = 856;
 
 const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 const lerp = (f: number, a: number[], b: number[], easing = easeInOut) =>
@@ -35,31 +35,31 @@ const T = {
   plants: 0,
   drying: 22,
   out: 44,
-  zones: 66,
-  toCheck: 90,
-  toCheckOut: 118,
-  phoneIn: 124,
-  phoneSettled: 164,
-  headline: 158,
-  props: 168,
-  burst: 218,
-  ribbon1: 252,
-  pan: 328,
-  ribbon2: 326,
-  wipe: 360,
-  fanIn: 374,
-  wave: 420,
-  fanWords: 440,
-  fanOut: 506,
-  slide: 510,
-  slideWords: 534,
-  scan: 615,
-  check: 633,
-  done: 652,
-  shrink: 668,
-  iconIn: 688,
-  toEnd: 712,
-  endText: 730,
+  zones: 82,
+  toCheck: 106,
+  toCheckOut: 134,
+  phoneIn: 134,
+  phoneSettled: 180,
+  headline: 174,
+  props: 184,
+  burst: 234,
+  ribbon1: 268,
+  pan: 344,
+  ribbon2: 342,
+  wipe: 376,
+  fanIn: 390,
+  wave: 436,
+  fanWords: 456,
+  fanOut: 522,
+  slide: 526,
+  slideWords: 550,
+  scan: 631,
+  check: 649,
+  done: 668,
+  shrink: 684,
+  iconIn: 704,
+  toEnd: 728,
+  endText: 746,
 };
 
 const FAN = ['home.png', 'map.png', 'zone.png', 'checkin.png', 'profile-synced.png'];
@@ -74,6 +74,9 @@ function Phone({ src, width }: { src: string; width: number }) {
   return (
     <div
       style={{
+        width: width + b * 2,
+        boxSizing: 'border-box',
+        flexShrink: 0,
         padding: b,
         borderRadius: width * 0.13 + b,
         background: '#1B1B1A',
@@ -708,15 +711,13 @@ function SlideBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
 function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   const f = useCurrentFrame();
   if (f < T.done) return null;
-  const tile = L ? 280 : 330;
-  const textW = L ? 1000 : 0;
-  const gap = 56;
+  const tile = L ? 210 : 300;
   const shrink = lerp(f, [T.shrink, T.shrink + 30], [0, 1]);
   const toEnd = lerp(f, [T.toEnd, T.toEnd + 26], [0, 1]);
   const w = W + (tile - W) * shrink;
   const h = H + (tile - H) * shrink;
-  const endCx = L ? W / 2 - (tile + gap + textW) / 2 + tile / 2 : W / 2;
-  const endCy = L ? H / 2 : H * 0.36;
+  const endCx = W / 2;
+  const endCy = L ? H * 0.27 : H * 0.3;
   const cx = W / 2 + (endCx - W / 2) * toEnd;
   const cy = H / 2 + (endCy - H / 2) * toEnd;
   const fontSize = L ? 470 : 300;
@@ -804,37 +805,47 @@ function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
       <div
         style={{
           position: 'absolute',
+          left: 0,
+          right: 0,
+          top: endCy + tile / 2 + (L ? 18 : 30),
           fontFamily: FONT,
-          ...(L
-            ? {
-                left: endCx + tile / 2 + gap,
-                top: H / 2 - 175,
-                width: textW,
-                textAlign: 'left' as const,
-              }
-            : { left: 0, right: 0, top: endCy + tile / 2 + 60, textAlign: 'center' as const }),
+          textAlign: 'center',
         }}
       >
         <div
           style={{
-            fontSize: L ? 80 : 78,
-            fontWeight: 500,
+            fontSize: L ? 104 : 120,
+            fontWeight: 700,
             color: C.text,
-            letterSpacing: -1.5,
-            lineHeight: 1.1,
+            letterSpacing: -3,
+            lineHeight: 1,
             opacity: e1,
             transform: `translateY(${(1 - e1) * 24}px)`,
+          }}
+        >
+          Uma
+        </div>
+        <div
+          style={{
+            marginTop: L ? 34 : 50,
+            fontSize: L ? 60 : 64,
+            fontWeight: 500,
+            color: C.text,
+            letterSpacing: -1.2,
+            lineHeight: 1.1,
+            opacity: e2,
+            transform: `translateY(${(1 - e2) * 24}px)`,
           }}
         >
           Watch your farm
         </div>
         <div
           style={{
-            fontSize: L ? 96 : 96,
+            fontSize: L ? 76 : 76,
             fontWeight: 700,
             color: C.green,
-            letterSpacing: -3,
-            lineHeight: 1.02,
+            letterSpacing: -2.2,
+            lineHeight: 1.1,
             whiteSpace: 'nowrap',
             opacity: e2,
             transform: `translateY(${(1 - e2) * 24}px)`,
