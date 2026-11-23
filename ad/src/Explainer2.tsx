@@ -42,18 +42,18 @@ const T = {
   phoneSettled: 180,
   headline: 174,
   props: 184,
-  burst: 234,
-  ribbon1: 268,
-  pan: 344,
-  ribbon2: 342,
-  wipe: 376,
-  fanIn: 390,
-  wave: 436,
-  fanWords: 456,
-  fanOut: 522,
-  slide: 526,
-  slideWords: 550,
-  qr: 631,
+  qr: 234,
+  burst: 384,
+  ribbon1: 418,
+  pan: 494,
+  ribbon2: 492,
+  wipe: 526,
+  fanIn: 540,
+  wave: 586,
+  fanWords: 606,
+  fanOut: 672,
+  slide: 676,
+  slideWords: 700,
   scan: 781,
   check: 799,
   done: 818,
@@ -341,12 +341,12 @@ function OptionCard({
 
 function PhoneBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   const f = useCurrentFrame();
-  if (f < T.toCheckOut || f > T.burst + 16) return null;
+  if (f < T.toCheckOut || f > T.qr + 16) return null;
   const pw = L ? 390 : 560;
   const ph = (pw * SHOT.h) / SHOT.w;
   // Dolly: the phone starts huge and close at the bottom, tilted, and settles.
   const p = lerp(f, [T.phoneIn, T.phoneSettled], [0, 1], easeOut);
-  const out = lerp(f, [T.burst, T.burst + 12], [0, 1], easeIn);
+  const out = lerp(f, [T.qr, T.qr + 12], [0, 1], easeIn);
   const cy = L ? H * 0.58 : H * 0.55;
   const props = [
     {
@@ -648,7 +648,7 @@ function FanBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
 
 function SlideBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   const f = useCurrentFrame();
-  if (f < T.slide || f >= T.qr + 16) return null;
+  if (f < T.slide || f >= T.scan) return null;
   const ph = H * (L ? 0.84 : 0.56);
   const pw = (ph * SHOT.w) / SHOT.h;
   const inP = lerp(f, [T.slide + 2, T.slide + 24], [0, 1], easeOut);
@@ -719,9 +719,8 @@ const SCAN_WIN = { x: 255, y: 1035, w: 752, h: 752 };
 function QrBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   const f = useCurrentFrame();
   const q = T.qr;
-  if (f < q || f >= T.scan) return null;
-  const wave = lerp(f, [q, q + 16], [0, 1], easeOut);
-  const waveTop = H * (1 - wave) - 60;
+  if (f < q || f > T.burst + 14) return null;
+  const exit = lerp(f, [T.burst, T.burst + 12], [0, 1], easeIn);
   const pw = L ? 380 : 520;
   const ph = (pw * SHOT.h) / SHOT.w;
   const b = pw * 0.035;
@@ -759,13 +758,13 @@ function QrBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
     />
   );
   return (
-    <AbsoluteFill>
-      <svg width={W} height={H} style={{ position: 'absolute', inset: 0 }}>
-        <path
-          d={`M 0 ${waveTop + 40} C ${W * 0.3} ${waveTop - 30}, ${W * 0.6} ${waveTop + 70}, ${W} ${waveTop} L ${W} ${H} L 0 ${H} Z`}
-          fill={C.white}
-        />
-      </svg>
+    <AbsoluteFill
+      style={{
+        opacity: 1 - exit,
+        filter: exit > 0 ? `blur(${exit * 16}px)` : undefined,
+        transform: `scale(${1 - exit * 0.3})`,
+      }}
+    >
       <div style={{ position: 'absolute', left: 0, right: 0, top: L ? H * 0.07 : H * 0.08 }}>
         <div style={{ opacity: 1 - opens }}>
           <DropWords text="Scan the zone's QR." start={q + 24} size={L ? 92 : 88} color={C.green} />
@@ -1045,10 +1044,10 @@ export function Explainer2({ layout }: { layout: Layout }) {
         exitAt={T.toCheckOut}
       />
       <PhoneBeat L={L} W={W} H={H} />
+      <QrBeat L={L} W={W} H={H} />
       <CardsBeat L={L} W={W} H={H} />
       <FanBeat L={L} W={W} H={H} />
       <SlideBeat L={L} W={W} H={H} />
-      <QrBeat L={L} W={W} H={H} />
       <Punch text="scan" from={T.scan} to={T.check} green size={big} />
       <Punch text="check" from={T.check} to={T.done} green={false} size={big} />
       <IconBeat L={L} W={W} H={H} />
