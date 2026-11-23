@@ -24,7 +24,7 @@ import { C, FONT, SHOT, type Layout } from './theme';
 
 loadFonts();
 
-export const TOTAL_FRAMES_2 = 856;
+export const TOTAL_FRAMES_2 = 1006;
 
 const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 const lerp = (f: number, a: number[], b: number[], easing = easeInOut) =>
@@ -53,13 +53,14 @@ const T = {
   fanOut: 522,
   slide: 526,
   slideWords: 550,
-  scan: 631,
-  check: 649,
-  done: 668,
-  shrink: 684,
-  iconIn: 704,
-  toEnd: 728,
-  endText: 746,
+  qr: 631,
+  scan: 781,
+  check: 799,
+  done: 818,
+  shrink: 834,
+  iconIn: 854,
+  toEnd: 878,
+  endText: 896,
 };
 
 const FAN = ['home.png', 'map.png', 'zone.png', 'checkin.png', 'profile-synced.png'];
@@ -647,7 +648,7 @@ function FanBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
 
 function SlideBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   const f = useCurrentFrame();
-  if (f < T.slide || f >= T.scan) return null;
+  if (f < T.slide || f >= T.qr + 16) return null;
   const ph = H * (L ? 0.84 : 0.56);
   const pw = (ph * SHOT.w) / SHOT.h;
   const inP = lerp(f, [T.slide + 2, T.slide + 24], [0, 1], easeOut);
@@ -702,6 +703,141 @@ function SlideBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
         }}
       >
         <Phone src="checkin.png" width={pw} />
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+/** Real screen spot (screenshot px): the camera window on the Scan screen. */
+const SCAN_WIN = { x: 255, y: 1035, w: 752, h: 752 };
+
+/**
+ * QR scan showcase: a white wave rises over the green, the real printed zone
+ * label slides in, the real Scan screen sweeps it, and the screen morphs into
+ * the zone that opens.
+ */
+function QrBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
+  const f = useCurrentFrame();
+  const q = T.qr;
+  if (f < q || f >= T.scan) return null;
+  const wave = lerp(f, [q, q + 16], [0, 1], easeOut);
+  const waveTop = H * (1 - wave) - 60;
+  const pw = L ? 380 : 520;
+  const ph = (pw * SHOT.h) / SHOT.w;
+  const b = pw * 0.035;
+  const k = pw / SHOT.w;
+  const phoneIn = lerp(f, [q + 6, q + 30], [0, 1], easeOut);
+  const labelIn = lerp(f, [q + 18, q + 38], [0, 1], easeOut);
+  const labelInPrev = lerp(f - 1, [q + 18, q + 38], [0, 1], easeOut);
+  const opens = lerp(f, [q + 84, q + 100], [0, 1]);
+  const lw = L ? 380 : 400;
+  const lh = (lw * 995) / 1110;
+  // Phone right of centre (landscape) or centre (portrait); label beside / below it.
+  const px = L ? W * 0.62 - pw / 2 : W / 2 - pw / 2;
+  const py = L ? H * 0.6 - ph / 2 : H * 0.55 - ph / 2;
+  const lx = L ? W * 0.3 - lw / 2 : W * 0.08;
+  const ly = L ? H * 0.62 - lh / 2 : H * 0.7;
+  const labelX = (1 - labelIn) * -W * 0.5;
+  const labelDx = labelX - (1 - labelInPrev) * -W * 0.5;
+  const sweepT = (f - (q + 44)) / 20;
+  const sweeping = sweepT >= 0 && sweepT < 2;
+  const sweepY = (sweepT % 1) * SCAN_WIN.h;
+  const hit = lerp(f, [q + 82, q + 88, q + 100], [0, 1, 0]);
+  const breath = 1 + Math.sin(opens * Math.PI) * 0.03;
+  const screen = (src: string, opacity: number) => (
+    <Img
+      src={staticFile(`screens/${src}`)}
+      style={{
+        position: 'absolute',
+        left: b,
+        top: b,
+        width: pw,
+        height: ph,
+        borderRadius: pw * 0.13,
+        opacity,
+      }}
+    />
+  );
+  return (
+    <AbsoluteFill>
+      <svg width={W} height={H} style={{ position: 'absolute', inset: 0 }}>
+        <path
+          d={`M 0 ${waveTop + 40} C ${W * 0.3} ${waveTop - 30}, ${W * 0.6} ${waveTop + 70}, ${W} ${waveTop} L ${W} ${H} L 0 ${H} Z`}
+          fill={C.white}
+        />
+      </svg>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: L ? H * 0.07 : H * 0.08 }}>
+        <div style={{ opacity: 1 - opens }}>
+          <DropWords text="Scan the zone's QR." start={q + 24} size={L ? 92 : 88} color={C.green} />
+        </div>
+        <div style={{ position: 'absolute', inset: 0, opacity: opens }}>
+          <DropWords text="The zone opens." start={q + 88} size={L ? 92 : 88} color={C.green} />
+        </div>
+      </div>
+      {/* The real printed label, with a motion trail as it slides in. */}
+      {[3, 2, 1, 0].map((t) => (
+        <div
+          key={t}
+          style={{
+            position: 'absolute',
+            left: lx + labelX - labelDx * t * 0.6,
+            top: ly,
+            width: lw,
+            opacity: labelIn > 0 ? (t === 0 ? 1 : Math.abs(labelDx) > 5 ? 0.2 / t : 0) : 0,
+            transform: `rotate(-7deg) scale(${1 + hit * 0.04})`,
+            borderRadius: 26,
+            overflow: 'hidden',
+            boxShadow:
+              t === 0
+                ? `0 30px 70px rgba(20,20,20,0.18), 0 0 0 ${hit * 10}px rgba(22,146,63,0.35)`
+                : undefined,
+            zIndex: L ? 1 : 3,
+          }}
+        >
+          <Img
+            src={staticFile('crops/qr-label.png')}
+            style={{ width: lw, height: lh, display: 'block' }}
+          />
+        </div>
+      ))}
+      {/* The real Scan screen in a phone; a green line sweeps the camera window. */}
+      <div
+        style={{
+          position: 'absolute',
+          left: px,
+          top: py,
+          zIndex: 2,
+          transform: `translateY(${(1 - phoneIn) * H}px) rotate(${(1 - phoneIn) * 8}deg) scale(${breath})`,
+        }}
+      >
+        <div
+          style={{
+            position: 'relative',
+            width: pw + b * 2,
+            height: ph + b * 2,
+            borderRadius: pw * 0.13 + b,
+            background: '#1B1B1A',
+            boxShadow: '0 40px 90px rgba(20,20,20,0.24), 0 10px 26px rgba(20,20,20,0.12)',
+            overflow: 'hidden',
+          }}
+        >
+          {screen('scan.png', 1)}
+          {screen('zone.png', opens)}
+          {sweeping && (
+            <div
+              style={{
+                position: 'absolute',
+                left: b + (SCAN_WIN.x + 50) * k,
+                top: b + (SCAN_WIN.y + sweepY) * k,
+                width: (SCAN_WIN.w - 100) * k,
+                height: Math.max(3, 9 * k),
+                borderRadius: 4,
+                background: C.green,
+                boxShadow: `0 0 ${40 * k}px ${C.green}`,
+              }}
+            />
+          )}
+        </div>
       </div>
     </AbsoluteFill>
   );
@@ -837,7 +973,7 @@ function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
             transform: `translateY(${(1 - e2) * 24}px)`,
           }}
         >
-          Watch your farm
+          Your whole farm,
         </div>
         <div
           style={{
@@ -851,7 +987,7 @@ function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
             transform: `translateY(${(1 - e2) * 24}px)`,
           }}
         >
-          even with no signal.
+          in your pocket.
         </div>
       </div>
       <div
@@ -912,6 +1048,7 @@ export function Explainer2({ layout }: { layout: Layout }) {
       <CardsBeat L={L} W={W} H={H} />
       <FanBeat L={L} W={W} H={H} />
       <SlideBeat L={L} W={W} H={H} />
+      <QrBeat L={L} W={W} H={H} />
       <Punch text="scan" from={T.scan} to={T.check} green size={big} />
       <Punch text="check" from={T.check} to={T.done} green={false} size={big} />
       <IconBeat L={L} W={W} H={H} />

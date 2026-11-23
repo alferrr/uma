@@ -7,8 +7,9 @@
 | Option cards "Okay" / "Needs water" | Real rows from the Check-in screen (`src/app/check-in/[id].tsx`) |
 | "See every zone." | Home zone list and Map (`src/app/home.tsx`, `src/app/map.tsx`) |
 | "Even with no signal." | Offline-first check-ins (`src/lib/db.ts`, `src/lib/sync.ts`); also the app's own Home headline |
+| "Scan the zone's QR." / "The zone opens." | Real Scan screen (`src/app/scan.tsx`), real printed label (`src/app/qr/[id].tsx`), zone opens (`src/app/zone/[id].tsx`); the scan line is a motion overlay since the simulator has no camera |
 | "scan / check / done" | QR Scan (`src/app/scan.tsx`), Check-in, Saved (`src/app/saved.tsx`) |
-| "Uma" + "Watch your farm even with no signal." | Offline-first check-ins (`src/lib/db.ts`) and the app's Home headline |
+| "Uma" + "Your whole farm, in your pocket." | Offline-first check-ins (`src/lib/db.ts`) and the app's Home headline |
 | "Cebuano · English · Tagalog" | `src/lib/i18n.ts` |
 
 The "54% Just right · Sample data" prop is the app's seeded sample reading and says so. No
