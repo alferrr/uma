@@ -2,3 +2,4 @@ node_modules/
 out/
 # frames extracted from the reference video; not ours to publish
 _ref/
+inspo2.mp4
