@@ -1,6 +1,6 @@
 # Style notes for explainer #2 (from `inspo2.mp4`)
 
-Reference: 25.9 s, 1024×576, 29.97 fps. Studied at 10 fps. Only motion language and structure are
+Reference: 25.9 s (Uma cut: 26.7 s), 1024×576, 29.97 fps. Studied at 10 fps. Only motion language and structure are
 borrowed; colours, type and assets are Uma's (Outfit, green `#16923F`, near-black `#141414`,
 white, orange only as the app's own active state inside screenshots).
 
@@ -17,3 +17,11 @@ white, orange only as the app's own active state inside screenshots).
 
 Easing: ease-out cubic for entrances, ease-in for exits, ease-in-out for morphs; fast moves get
 directional trails instead of a generic blur.
+
+## v2 fixes
+- Beats now overlap so there's never an empty frame: the screen fan rises under the
+  green wipe, and the slide-in phone's splash covers the fan's exit.
+- Option cards are drawn in Uma's style (white, green outline, the app's check and drop
+  icons in a green circle) instead of tiny screenshot rows.
+- Props are pre-cropped real UI pieces that fly in from the sides with trails.
+- Word punches fill the frame, as in the reference; slow push-ins on holds.

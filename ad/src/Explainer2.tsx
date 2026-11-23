@@ -1,9 +1,11 @@
 /**
- * Uma explainer #2, following inspo2.mp4's motion language (word punches, a 3D
- * phone, option cards with a ribbon stroke, an icon that grows into a full-screen
- * wipe, a fan of screens, a slide-in phone, and a panel that shrinks into the app
- * icon), in Uma's own design: Outfit, green #16923F, orange only for emphasis,
- * near-black text, white and #F4F4F1. All screens are real app captures.
+ * Uma explainer #2. Timing and motion follow inspo2.mp4 beat for beat:
+ *   word punches → 3D phone with floating props → phone bursts into option cards
+ *   → ribbon strokes + pan → chosen icon grows into a full-screen wipe → fan of
+ *   screens + wave + dropping words → slide-in phone → word punches → panel shrinks
+ *   into the app icon → end card.
+ * Look is strictly Uma's: Outfit, green #16923F, near-black #141414, white, #F4F4F1,
+ * the app's own icons, and real app screens.
  */
 import type { ReactNode } from 'react';
 import {
@@ -15,34 +17,54 @@ import {
   useVideoConfig,
 } from 'remotion';
 
-import { Clip, type Crop } from './components/Screen';
 import { easeIn, easeInOut, easeOut, rise } from './ease';
 import { loadFonts } from './fonts';
 import { C, FONT, SHOT, type Layout } from './theme';
 
 loadFonts();
 
-export const TOTAL_FRAMES_2 = 880;
+export const TOTAL_FRAMES_2 = 800;
 
 const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 const lerp = (f: number, a: number[], b: number[], easing = easeInOut) =>
   interpolate(f, a, b, { easing, ...clamp });
 
-// Real-screenshot crops (screenshot px).
-const OKAY: Crop = { x: 60, y: 800, w: 1140, h: 260 };
-const WATER: Crop = { x: 60, y: 1082, w: 1140, h: 260 };
-const ICON_IN_CARD = { x: 130, y: 130 }; // centre of the row's icon circle, inside the crop
-const PROPS: { src: string; crop: Crop }[] = [
-  { src: 'map.png', crop: { x: 80, y: 754, w: 416, h: 104 } }, // POT-01 Okay
-  { src: 'zone.png', crop: { x: 790, y: 1438, w: 390, h: 135 } }, // 54% Just right · Sample data
-  { src: 'map.png', crop: { x: 684, y: 1420, w: 386, h: 104 } }, // Z-04 Water
-  { src: 'profile-synced.png', crop: { x: 75, y: 2325, w: 1110, h: 195 } }, // All records synced
-];
+// Timeline (30 fps), matched to inspo2 at 10 fps.
+const T = {
+  plants: 0,
+  drying: 14,
+  problem: 32,
+  toCheck: 54,
+  phoneIn: 84,
+  phoneSettled: 124,
+  headline: 118,
+  props: 128,
+  burst: 178,
+  ribbon1: 212,
+  pan: 288,
+  ribbon2: 286,
+  wipe: 320,
+  fanIn: 334,
+  wave: 380,
+  fanWords: 400,
+  fanOut: 466,
+  slide: 470,
+  slideWords: 494,
+  scan: 575,
+  check: 593,
+  done: 612,
+  shrink: 628,
+  iconIn: 648,
+  toEnd: 672,
+  endText: 690,
+};
+
 const FAN = ['home.png', 'map.png', 'zone.png', 'checkin.png', 'profile-synced.png'];
+const CHECK = 'M5 12.5l4.5 4.5L19 7.5';
+const DROP = 'M12 3.5c3.6 4.3 5.5 7.4 5.5 10a5.5 5.5 0 0 1-11 0c0-2.6 1.9-5.7 5.5-10Z';
 
-// ─── Pieces ───
+// ─── Shared pieces ───
 
-/** A phone with a clean bezel around a real screenshot. */
 function Phone({ src, width }: { src: string; width: number }) {
   const h = (width * SHOT.h) / SHOT.w;
   const b = width * 0.035;
@@ -52,37 +74,36 @@ function Phone({ src, width }: { src: string; width: number }) {
         padding: b,
         borderRadius: width * 0.13 + b,
         background: '#1B1B1A',
-        boxShadow: '0 40px 90px rgba(20,20,20,0.22), 0 10px 24px rgba(20,20,20,0.12)',
+        boxShadow: '0 40px 90px rgba(20,20,20,0.24), 0 10px 26px rgba(20,20,20,0.12)',
       }}
     >
-      <div style={{ width, height: h, borderRadius: width * 0.13, overflow: 'hidden' }}>
-        <Img src={staticFile(`screens/${src}`)} style={{ width, height: h }} />
+      <div
+        style={{
+          width,
+          height: h,
+          borderRadius: width * 0.13,
+          overflow: 'hidden',
+          background: '#fff',
+        }}
+      >
+        <Img src={staticFile(`screens/${src}`)} style={{ width, height: h, display: 'block' }} />
       </div>
     </div>
   );
 }
 
-/** Copies along the motion direction: cheap, clean motion blur for fast moves. */
-function Trail({
-  dx = 0,
-  dy = 0,
-  speed,
-  children,
-}: {
-  dx?: number;
-  dy?: number;
-  speed: number;
-  children: ReactNode;
-}) {
-  const n = speed > 6 ? 6 : 1;
+/** Copies along the direction of motion: a clean motion blur for fast moves. */
+function Trail({ dx = 0, dy = 0, children }: { dx?: number; dy?: number; children: ReactNode }) {
+  const speed = Math.hypot(dx, dy);
+  const n = speed > 5 ? 6 : 1;
   return (
     <>
       {Array.from({ length: n }, (_, i) => (
         <AbsoluteFill
           key={i}
           style={{
-            transform: `translate(${dx * i * 0.35}px, ${dy * i * 0.35}px)`,
-            opacity: n === 1 ? 1 : i === 0 ? 0.55 : 0.45 / (i + 1),
+            transform: `translate(${-dx * i * 0.4}px, ${-dy * i * 0.4}px)`,
+            opacity: n === 1 ? 1 : i === 0 ? 0.6 : 0.4 / (i + 1),
           }}
         >
           {children}
@@ -92,52 +113,43 @@ function Trail({
   );
 }
 
-/**
- * A word punch: the word slides up into place fast with a vertical motion
- * trail, then holds. Background is green (white text) or white (near-black text).
- */
+/** A huge word that slides up into place with a vertical trail, on green or white. */
 function Punch({
   text,
   from,
   to,
   green,
   size,
-  scaleTo = 1,
-  lines,
+  shrinkTo = 1,
+  weight = 700,
 }: {
   text: string;
   from: number;
   to: number;
   green: boolean;
   size: number;
-  scaleTo?: number;
-  lines?: boolean;
+  shrinkTo?: number;
+  weight?: number;
 }) {
   const f = useCurrentFrame();
   if (f < from || f >= to) return null;
-  const y = (t: number) => lerp(t, [from, from + 7], [size * 0.9, 0], easeOut);
-  const v = Math.abs(y(f) - y(f - 1));
-  const s = lerp(f, [from + 8, to], [1, scaleTo], easeInOut);
+  const y = (t: number) => lerp(t, [from, from + 6], [size * 1.1, 0], easeOut);
+  const s = lerp(f, [from + 8, to], [1, shrinkTo]);
   return (
     <AbsoluteFill style={{ background: green ? C.green : C.white }}>
-      <Trail dy={y(f) - y(f - 1)} speed={v}>
-        <AbsoluteFill
-          style={{
-            alignItems: 'center',
-            justifyContent: 'center',
-            transform: `translateY(${y(f)}px) scale(${s})`,
-          }}
-        >
+      <Trail dy={y(f) - y(f - 1)}>
+        <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
           <div
             style={{
               fontFamily: FONT,
-              fontWeight: 700,
+              fontWeight: weight,
               fontSize: size,
-              lineHeight: lines ? 1.02 : 1,
+              lineHeight: 0.98,
               letterSpacing: -size * 0.045,
               color: green ? C.white : C.text,
               textAlign: 'center',
               whiteSpace: 'pre-line',
+              transform: `translateY(${y(f)}px) scale(${s})`,
             }}
           >
             {text}
@@ -148,25 +160,23 @@ function Punch({
   );
 }
 
-/** Words that drop in one by one (the reference's "pick your favorite"). */
+/** Words dropping in one by one, each with a little blur and tilt (the reference's "pick your favorite"). */
 function DropWords({
   text,
   start,
   size,
   color,
   every = 5,
-  weight = 600,
 }: {
   text: string;
   start: number;
   size: number;
   color: string;
   every?: number;
-  weight?: number;
 }) {
   const f = useCurrentFrame();
   return (
-    <div style={{ display: 'flex', gap: size * 0.26, justifyContent: 'center', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: size * 0.24, justifyContent: 'center' }}>
       {text.split(' ').map((w, i) => {
         const t = rise(f, start + i * every, 12);
         return (
@@ -174,14 +184,14 @@ function DropWords({
             key={i}
             style={{
               fontFamily: FONT,
-              fontWeight: weight,
+              fontWeight: 600,
               fontSize: size,
               letterSpacing: -size * 0.02,
               color,
               opacity: t,
               filter: `blur(${(1 - t) * 6}px)`,
               display: 'inline-block',
-              transform: `translateY(${(1 - t) * -size * 0.6}px) rotate(${(1 - t) * (i % 2 ? 8 : -8)}deg)`,
+              transform: `translateY(${(1 - t) * -size * 0.7}px) rotate(${(1 - t) * (i % 2 ? 10 : -10)}deg)`,
             }}
           >
             {w}
@@ -192,7 +202,7 @@ function DropWords({
   );
 }
 
-/** A thick green stroke drawing itself along a path (the reference's ribbon). */
+/** Thick stroke drawing itself along a path. */
 function Ribbon({
   d,
   start,
@@ -226,149 +236,297 @@ function Ribbon({
   );
 }
 
+/** An option card in Uma's style: white, green outline, the app's icon in a green circle. */
+function OptionCard({
+  label,
+  icon,
+  w,
+  faded = 0,
+}: {
+  label: string;
+  icon: string;
+  w: number;
+  faded?: number;
+}) {
+  const h = w * 0.46;
+  const r = h * 0.2;
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: w,
+        height: h,
+        borderRadius: 32,
+        background: C.white,
+        border: `${Math.max(4, w * 0.007)}px solid rgba(22,146,63,${1 - faded * 0.7})`,
+        boxShadow: `0 24px 60px rgba(20,20,20,${0.1 * (1 - faded)})`,
+        overflow: 'hidden',
+      }}
+    >
+      {/* Large faint version of the icon on the left, like the reference's pictograms. */}
+      <svg
+        width={h * 1.05}
+        height={h * 1.05}
+        viewBox="0 0 24 24"
+        style={{ position: 'absolute', left: -h * 0.12, bottom: -h * 0.12, opacity: 0.12 }}
+      >
+        <path
+          d={icon}
+          fill="none"
+          stroke={C.green}
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <div
+        style={{
+          position: 'absolute',
+          left: w / 2 - r,
+          top: h * 0.16,
+          width: r * 2,
+          height: r * 2,
+          borderRadius: '50%',
+          background: C.green,
+          opacity: 1 - faded * 0.6,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <svg width={r * 1.1} height={r * 1.1} viewBox="0 0 24 24">
+          <path
+            d={icon}
+            fill="none"
+            stroke="#fff"
+            strokeWidth={2.4}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: h * 0.16 + r * 2 + h * 0.07,
+          textAlign: 'center',
+          fontFamily: FONT,
+          fontWeight: 600,
+          fontSize: h * 0.15,
+          color: C.green,
+          opacity: 1 - faded * 0.6,
+        }}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
 // ─── Beats ───
 
 function PhoneBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   const f = useCurrentFrame();
-  if (f < 112 || f > 262) return null;
-  const pw = L ? 360 : 520;
-  const rise3d = lerp(f, [112, 156], [0, 1], easeOut);
-  const out = lerp(f, [236, 254], [0, 1], easeIn);
+  if (f < T.phoneIn || f > T.burst + 16) return null;
+  const pw = L ? 390 : 560;
+  const ph = (pw * SHOT.h) / SHOT.w;
+  // Dolly: the phone starts huge and close at the bottom, tilted, and settles.
+  const p = lerp(f, [T.phoneIn, T.phoneSettled], [0, 1], easeOut);
+  const out = lerp(f, [T.burst, T.burst + 12], [0, 1], easeIn);
+  const cy = L ? H * 0.58 : H * 0.55;
+  const props = [
+    {
+      src: 'crops/pill-pot01.png',
+      w: L ? 380 : 400,
+      x: L ? -0.33 : -0.3,
+      y: L ? -0.05 : -0.16,
+      rot: -8,
+      from: [-1, 0],
+    },
+    {
+      src: 'crops/moisture.png',
+      w: L ? 360 : 380,
+      x: L ? 0.33 : 0.3,
+      y: L ? -0.16 : -0.24,
+      rot: 7,
+      from: [1, -0.4],
+    },
+    {
+      src: 'crops/pill-z04.png',
+      w: L ? 360 : 380,
+      x: L ? -0.3 : -0.28,
+      y: L ? 0.24 : 0.2,
+      rot: 6,
+      from: [-1, 0.6],
+    },
+    {
+      src: 'crops/sync.png',
+      w: L ? 460 : 460,
+      x: L ? 0.31 : 0.26,
+      y: L ? 0.2 : 0.28,
+      rot: -5,
+      from: [1, 0.5],
+    },
+  ];
   return (
     <AbsoluteFill>
-      {/* Headline, words dropping in, Uma green. */}
-      <div style={{ position: 'absolute', top: L ? 70 : 230, left: 0, right: 0, opacity: 1 - out }}>
-        <DropWords
-          text="Uma keeps track."
-          start={150}
-          size={L ? 84 : 92}
-          color={C.green}
-          weight={600}
-        />
+      <div style={{ position: 'absolute', top: L ? 54 : 170, left: 0, right: 0, opacity: 1 - out }}>
+        <DropWords text="Uma keeps track." start={T.headline} size={L ? 92 : 96} color={C.green} />
       </div>
-      {/* Floating real UI pieces around the phone, like the reference's product props. */}
-      {PROPS.map((p, i) => {
-        const t = rise(f, 164 + i * 6, 16);
-        const bob = Math.sin((f - 160) / 18 + i) * 6;
-        const pos = L
-          ? [
-              { x: W / 2 - pw / 2 - 360, y: H * 0.42 },
-              { x: W / 2 + pw / 2 + 40, y: H * 0.34 },
-              { x: W / 2 - pw / 2 - 300, y: H * 0.7 },
-              { x: W / 2 + pw / 2 + 10, y: H * 0.66 },
-            ][i]!
-          : [
-              { x: 40, y: H * 0.44 },
-              { x: W - 360, y: H * 0.36 },
-              { x: 60, y: H * 0.74 },
-              { x: W - 470, y: H * 0.8 },
-            ][i]!;
-        const w = i === 3 ? (L ? 420 : 430) : L ? 300 : 320;
-        return (
-          <div
-            key={i}
-            style={{
-              position: 'absolute',
-              left: pos.x,
-              top: pos.y + bob,
-              opacity: t * (1 - out),
-              filter: `blur(${(1 - t) * 8 + out * 10}px)`,
-              transform: `scale(${0.7 + 0.3 * t}) rotate(${(i % 2 ? 6 : -6) * (1 - t * 0.6)}deg)`,
-              boxShadow: '0 20px 50px rgba(20,20,20,0.16)',
-              borderRadius: 999,
-              zIndex: 2,
-            }}
-          >
-            <Clip src={p.src} crop={p.crop} width={w} radius={(w * p.crop.h) / p.crop.w / 2} />
-          </div>
-        );
-      })}
-      {/* The phone rises and un-tilts in 3D, then blurs away as the cards burst out. */}
-      <AbsoluteFill
-        style={{
-          alignItems: 'center',
-          justifyContent: L ? 'flex-start' : 'center',
-          perspective: 1600,
-        }}
-      >
+      <AbsoluteFill style={{ perspective: 1600 }}>
         <div
           style={{
-            marginTop: L ? 190 : 120,
+            position: 'absolute',
+            left: W / 2 - pw / 2,
+            top: cy - ph / 2,
             opacity: 1 - out,
-            filter: `blur(${out * 14}px)`,
-            transform: `translateY(${(1 - rise3d) * H * 0.9}px) rotateX(${(1 - rise3d) * 38}deg) rotateZ(${(1 - rise3d) * -8}deg) scale(${1 - out * 0.3})`,
+            filter: out > 0 ? `blur(${out * 16}px)` : undefined,
+            transform: `translateY(${(1 - p) * H * 0.75}px) scale(${(1 + (1 - p) * 1.3) * (1 - out * 0.35)}) rotateX(${(1 - p) * 34}deg) rotateZ(${(1 - p) * -10}deg)`,
           }}
         >
           <Phone src="home.png" width={pw} />
         </div>
       </AbsoluteFill>
+      {/* Real UI pieces fly in from the sides with a trail, like the reference's beans. */}
+      {props.map((pr, i) => {
+        const s = T.props + i * 5;
+        const t = lerp(f, [s, s + 14], [0, 1], easeOut);
+        if (t <= 0) return null;
+        const bob = Math.sin((f - s) / 14 + i) * 6;
+        const x = W / 2 + pr.x * W - pr.w / 2 + (1 - t) * pr.from[0]! * W * 0.5;
+        const y = cy + pr.y * H + (1 - t) * pr.from[1]! * H * 0.5 + bob;
+        const xPrev = (1 - lerp(f - 1, [s, s + 14], [0, 1], easeOut)) * pr.from[0]! * W * 0.5;
+        const dx = (1 - t) * pr.from[0]! * W * 0.5 - xPrev;
+        return (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              left: x,
+              top: y,
+              opacity: Math.min(1, t * 2) * (1 - out),
+            }}
+          >
+            {Math.abs(dx) > 5 &&
+              [1, 2, 3].map((k) => (
+                <Img
+                  key={k}
+                  src={staticFile(pr.src)}
+                  style={{
+                    position: 'absolute',
+                    width: pr.w,
+                    left: -dx * k * 0.5,
+                    opacity: 0.25 / k,
+                    borderRadius: 999,
+                    transform: `rotate(${pr.rot}deg)`,
+                  }}
+                />
+              ))}
+            <Img
+              src={staticFile(pr.src)}
+              style={{
+                width: pr.w,
+                display: 'block',
+                borderRadius: pr.src.includes('pill') ? 999 : 24,
+                transform: `rotate(${pr.rot}deg)`,
+                boxShadow: '0 20px 50px rgba(20,20,20,0.18)',
+                background: '#fff',
+              }}
+            />
+          </div>
+        );
+      })}
     </AbsoluteFill>
   );
 }
 
 function CardsBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   const f = useCurrentFrame();
-  if (f < 240 || f > 420) return null;
-  const cw = L ? 780 : 840;
-  const ch = (cw * OKAY.h) / OKAY.w;
-  const gap = L ? 60 : 70;
-  // Cards burst out of the phone, then the camera pans to "Needs water".
-  const burst = rise(f, 242, 18);
-  const pan = lerp(f, [300, 344], [0, 1]);
-  const dim = lerp(f, [318, 346], [0, 1]);
-  // Landscape: side by side, pan left. Portrait: stacked, pan up.
-  const okay = L
-    ? { x: W / 2 - cw - gap / 2 - pan * (cw / 2 + gap / 2) * 1.2, y: H / 2 - ch / 2 }
-    : { x: W / 2 - cw / 2, y: H / 2 - ch - gap / 2 - pan * (ch / 2 + gap / 2) * 1.2 };
-  const water = L
-    ? { x: W / 2 + gap / 2 - pan * (cw / 2 + gap / 2) * 1.2, y: H / 2 - ch / 2 }
-    : { x: W / 2 - cw / 2, y: H / 2 + gap / 2 - pan * (ch / 2 + gap / 2) * 1.2 };
-  const focus = 1 + dim * 0.08;
-  const k = (cw / OKAY.w) * focus;
-  // The icon circle of "Needs water" grows into a full-screen green wipe.
-  const iconX = water.x + ICON_IN_CARD.x * k - (cw * (focus - 1)) / 2;
-  const iconY = water.y + ICON_IN_CARD.y * k - (ch * (focus - 1)) / 2;
-  const grow = lerp(f, [370, 404], [0, 1], easeIn);
-  const R = Math.hypot(W, H) * 1.05;
-  const r = 100 * k + grow * (R - 100 * k);
-  const card = (
-    src: string,
-    crop: Crop,
-    pos: { x: number; y: number },
-    faded: number,
-    sc: number,
-    delay: number,
-  ) => {
-    const b = rise(f, 242 + delay, 18);
-    return (
+  if (f < T.burst || f > T.wipe + 26) return null;
+  const cw = L ? 720 : 760;
+  const ch = cw * 0.46;
+  const gap = L ? 70 : 80;
+  // Cards fly out of the phone, sideways (landscape) or up/down (portrait), with trails.
+  const b = (t: number) => lerp(t, [T.burst + 2, T.burst + 16], [0, 1], easeOut);
+  const pan = lerp(f, [T.pan, T.pan + 30], [0, 1]);
+  const focus = lerp(f, [T.pan + 6, T.pan + 30], [0, 1]);
+  const spreadNow = b(f);
+  const spreadPrev = b(f - 1);
+  const pos = (i: 0 | 1, spread: number) => {
+    const sign = i === 0 ? -1 : 1;
+    if (L) {
+      const homeX = W / 2 + sign * (cw / 2 + gap / 2) - cw / 2;
+      return {
+        x: W / 2 - cw / 2 + (homeX - (W / 2 - cw / 2)) * spread - pan * (cw / 2 + gap / 2),
+        y: H / 2 - ch / 2,
+      };
+    }
+    const homeY = H / 2 + sign * (ch / 2 + gap / 2) - ch / 2;
+    return {
+      x: W / 2 - cw / 2,
+      y: H / 2 - ch / 2 + (homeY - (H / 2 - ch / 2)) * spread - pan * (ch / 2 + gap / 2),
+    };
+  };
+  const push = lerp(f, [T.burst + 16, T.pan], [0, 0.05], easeOut);
+  const scaleIn = (0.55 + 0.45 * spreadNow) * (1 + push);
+  const sc1 = 1 + focus * 0.06;
+  // Icon circle of the focused card (centre in stage px), for the wipe.
+  const p1 = pos(1, spreadNow);
+  const r0 = ch * 0.2 * sc1;
+  const iconX = p1.x + cw / 2;
+  const iconY = p1.y + ch / 2 + (ch * 0.16 + ch * 0.2 - ch / 2) * sc1;
+  const grow = lerp(f, [T.wipe, T.wipe + 24], [0, 1], easeIn);
+  const R = Math.hypot(W, H);
+  const r = r0 + grow * (R - r0);
+
+  const d1 = L
+    ? `M ${0.12 * W} ${-0.1 * H} C ${-0.04 * W} ${0.2 * H}, ${0.06 * W} ${0.6 * H}, ${-0.06 * W} ${1.1 * H}`
+    : `M ${0.25 * W} ${-0.05 * H} C ${-0.05 * W} ${0.15 * H}, ${0.08 * W} ${0.45 * H}, ${-0.1 * W} ${0.7 * H}`;
+  const d2 = L
+    ? `M ${1.05 * W} ${1.0 * H} C ${0.72 * W} ${1.0 * H}, ${0.7 * W} ${0.62 * H}, ${0.86 * W} ${0.3 * H} S ${1.02 * W} ${-0.05 * H}, ${1.05 * W} ${-0.1 * H}`
+    : `M ${1.1 * W} ${1.0 * H} C ${0.7 * W} ${0.98 * H}, ${0.68 * W} ${0.72 * H}, ${0.86 * W} ${0.55 * H} S ${1.05 * W} ${0.35 * H}, ${1.1 * W} ${0.3 * H}`;
+  const card = (i: 0 | 1) => {
+    const now = pos(i, spreadNow);
+    const prev = pos(i, spreadPrev);
+    const dx = now.x - prev.x;
+    const dy = now.y - prev.y;
+    const faded = i === 0 ? focus : 0;
+    const s = scaleIn * (i === 1 ? sc1 : 1 - focus * 0.04);
+    const body = (opacity: number, ox: number, oy: number, key: number) => (
       <div
+        key={key}
         style={{
           position: 'absolute',
-          left: pos.x,
-          top: pos.y,
-          opacity: b * (1 - faded * 0.65),
-          filter: `blur(${(1 - b) * 12 + faded * 2}px)`,
-          transform: `scale(${(0.6 + 0.4 * b) * sc})`,
-          boxShadow: `0 24px 60px rgba(20,20,20,${0.1 + 0.08 * (sc - 1) * 10})`,
-          borderRadius: ch / 2,
+          left: now.x - ox,
+          top: now.y - oy,
+          opacity,
+          transform: `scale(${s})`,
         }}
       >
-        <Clip src={src} crop={crop} width={cw} radius={ch / 2} />
+        <OptionCard
+          label={i === 0 ? 'Okay' : 'Needs water'}
+          icon={i === 0 ? CHECK : DROP}
+          w={cw}
+          faded={faded}
+        />
       </div>
     );
+    return (
+      <>
+        {Math.hypot(dx, dy) > 6 &&
+          [3, 2, 1].map((k) => body(0.2 / k, dx * k * 0.6, dy * k * 0.6, k))}
+        {body(Math.min(1, spreadNow * 2) * (1 - faded * 0.35), 0, 0, 0)}
+      </>
+    );
   };
-  const d1 = L
-    ? `M ${-0.05 * W} ${1.05 * H} C ${0.02 * W} ${0.6 * H}, ${-0.05 * W} ${0.25 * H}, ${0.12 * W} ${-0.05 * H}`
-    : `M ${-0.1 * W} ${0.95 * H} C ${0.05 * W} ${0.65 * H}, ${-0.1 * W} ${0.3 * H}, ${0.2 * W} ${-0.05 * H}`;
-  const d2 = L
-    ? `M ${1.05 * W} ${0.95 * H} C ${0.7 * W} ${0.98 * H}, ${0.72 * W} ${0.6 * H}, ${0.88 * W} ${0.25 * H} S ${1.05 * W} ${-0.05 * H}, ${1.05 * W} ${-0.05 * H}`
-    : `M ${1.1 * W} ${0.9 * H} C ${0.6 * W} ${0.95 * H}, ${0.65 * W} ${0.62 * H}, ${0.9 * W} ${0.45 * H} S ${1.1 * W} ${0.3 * H}, ${1.1 * W} ${0.3 * H}`;
   return (
-    <AbsoluteFill style={{ background: C.white, opacity: burst > 0 ? 1 : 0 }}>
-      <Ribbon d={d1} start={262} dur={40} width={L ? 120 : 130} />
-      <Ribbon d={d2} start={320} dur={40} width={L ? 120 : 130} />
-      {card('checkin.png', OKAY, okay, dim, 1, 0)}
-      {card('checkin.png', WATER, water, 0, focus, 5)}
+    <AbsoluteFill style={{ background: f >= T.burst + 6 ? C.white : 'transparent' }}>
+      <Ribbon d={d1} start={T.ribbon1} dur={26} width={L ? 120 : 130} />
+      <Ribbon d={d2} start={T.ribbon2} dur={30} width={L ? 120 : 130} />
+      {card(0)}
+      {card(1)}
       {grow > 0 && (
         <div
           style={{
@@ -388,48 +546,52 @@ function CardsBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
 
 function FanBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   const f = useCurrentFrame();
-  if (f < 402 || f > 566) return null;
-  const pw = L ? 300 : 360;
-  const out = lerp(f, [546, 564], [0, 1], easeIn);
-  const wave = lerp(f, [470, 500], [0, 1], easeOut);
-  const waveH = (L ? 0.34 : 0.3) * H * wave;
-  const crest = (t: number) => Math.sin(t * Math.PI * 2 + f / 10) * 26 * wave;
+  if (f < T.fanIn - 2 || f > T.fanOut + 18) return null;
+  const pw = L ? 330 : 380;
+  const out = lerp(f, [T.fanOut, T.fanOut + 16], [0, 1], easeIn);
+  const wave = lerp(f, [T.wave, T.wave + 24], [0, 1], easeOut);
+  const waveH = (L ? 0.3 : 0.26) * H * wave;
+  const crest = (k: number) => Math.sin(k * Math.PI * 2 + f / 9) * 28 * wave;
   const path = `M 0 0 H ${W} V ${waveH + crest(1)} C ${W * 0.75} ${waveH + crest(0.75) + 40}, ${W * 0.5} ${waveH + crest(0.5) - 30}, ${W * 0.25} ${waveH + crest(0.25) + 30} S 0 ${waveH + crest(0)}, 0 ${waveH} Z`;
   return (
-    <AbsoluteFill style={{ background: C.green }}>
+    <AbsoluteFill style={{ background: f >= T.wipe + 24 ? C.green : 'transparent' }}>
       <AbsoluteFill
         style={{
-          alignItems: 'center',
-          justifyContent: 'center',
           perspective: 1800,
-          paddingTop: L ? 180 : 240,
           opacity: 1 - out,
-          filter: `blur(${out * 12}px)`,
-          transform: `translate(${out * W * 0.15}px, ${out * H * 0.1}px)`,
+          transform: `translate(${out * W * 0.2}px, ${out * H * 0.25}px) scale(${1 + lerp(f, [T.fanIn + 20, T.fanOut], [0, 0.06], easeOut)})`,
+          filter: out > 0 ? `blur(${out * 14}px)` : undefined,
         }}
       >
         <div
           style={{
-            position: 'relative',
+            position: 'absolute',
+            left: W / 2 - pw / 2,
+            top: L ? H * 0.36 : H * 0.36,
             width: pw,
             height: (pw * SHOT.h) / SHOT.w,
             transformStyle: 'preserve-3d',
+            transform: 'rotateX(18deg)',
           }}
         >
           {FAN.map((src, i) => {
             const mid = (FAN.length - 1) / 2;
-            const t = rise(f, 404 + i * 4, 20);
-            const y = (1 - t) * H;
-            const v = (1 - rise(f - 1, 404 + i * 4, 20)) * H - y;
+            const d = i - mid;
+            const s = T.fanIn + Math.abs(d) * 4;
+            const t = lerp(f, [s, s + 18], [0, 1], easeOut);
+            const tp = lerp(f - 1, [s, s + 18], [0, 1], easeOut);
+            const y = (1 - t) * H * 1.1;
+            const v = (tp - t) * H * 1.1;
             return (
               <div
                 key={src}
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  zIndex: FAN.length - Math.abs(i - mid),
-                  transform: `translate3d(${(i - mid) * pw * (L ? 0.55 : 0.42)}px, ${y + Math.abs(i - mid) * 26}px, ${-Math.abs(i - mid) * 120}px) rotateY(${(i - mid) * -8}deg) rotateZ(${(i - mid) * 3}deg)`,
-                  filter: v > 20 ? `blur(${Math.min(10, v / 12)}px)` : undefined,
+                  zIndex: 10 - Math.abs(d),
+                  transform: `translate3d(${d * pw * (L ? 0.62 : 0.5)}px, ${y + Math.abs(d) * 30}px, ${-Math.abs(d) * 140}px) rotateY(${d * -10}deg) rotateZ(${d * 4}deg)`,
+                  filter:
+                    Math.abs(v) > 15 ? `blur(${Math.min(12, Math.abs(v) / 10)}px)` : undefined,
                 }}
               >
                 <Phone src={src} width={pw} />
@@ -446,7 +608,7 @@ function FanBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
       <div
         style={{
           position: 'absolute',
-          top: (L ? 0.12 : 0.11) * H,
+          top: H * (L ? 0.09 : 0.08),
           left: 0,
           right: 0,
           opacity: 1 - out,
@@ -454,8 +616,8 @@ function FanBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
       >
         <DropWords
           text="See every zone."
-          start={490}
-          size={L ? 80 : 88}
+          start={T.fanWords}
+          size={L ? 92 : 96}
           color={C.green}
           every={6}
         />
@@ -466,49 +628,45 @@ function FanBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
 
 function SlideBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   const f = useCurrentFrame();
-  if (f < 556 || f > 668) return null;
-  const pw = L ? 340 : 420;
-  const inP = rise(f, 558, 22);
-  const blob = lerp(f, [556, 574], [0, 1], easeOut);
-  const out = lerp(f, [652, 666], [0, 1], easeIn);
-  const words = 'Even with no signal.'.split(' ');
+  if (f < T.slide || f >= T.scan) return null;
+  const ph = H * (L ? 0.84 : 0.56);
+  const pw = (ph * SHOT.w) / SHOT.h;
+  const inP = lerp(f, [T.slide + 2, T.slide + 24], [0, 1], easeOut);
+  const blob = lerp(f, [T.slide, T.slide + 18], [0, 1], easeOut);
+  const words = ['Even', 'with', 'no', 'signal.'];
   const blobPath = L
-    ? `M ${W} 0 C ${W * 0.84} ${H * 0.1}, ${W * 0.76} ${H * 0.3}, ${W * 0.8} ${H * 0.5} S ${W * 0.7} ${H * 0.86}, ${W * 0.86} ${H} L ${W} ${H} Z`
-    : `M ${W} ${H * 0.28} C ${W * 0.62} ${H * 0.3}, ${W * 0.52} ${H * 0.45}, ${W * 0.6} ${H * 0.62} S ${W * 0.4} ${H * 0.9}, ${W * 0.62} ${H} L ${W} ${H} Z`;
+    ? `M ${W} 0 L ${W * 0.86} 0 C ${W * 0.76} ${H * 0.18}, ${W * 0.7} ${H * 0.35}, ${W * 0.75} ${H * 0.52} S ${W * 0.66} ${H * 0.88}, ${W * 0.8} ${H} L ${W} ${H} Z`
+    : `M ${W} ${H * 0.3} C ${W * 0.62} ${H * 0.32}, ${W * 0.5} ${H * 0.48}, ${W * 0.58} ${H * 0.64} S ${W * 0.38} ${H * 0.92}, ${W * 0.6} ${H} L ${W} ${H} Z`;
   return (
-    <AbsoluteFill style={{ background: C.green }}>
+    <AbsoluteFill style={{ background: f >= T.fanOut + 16 ? C.green : 'transparent' }}>
       <svg width={W} height={H} style={{ position: 'absolute', inset: 0 }}>
-        <path
-          d={blobPath}
-          fill={C.white}
-          transform={`translate(${(1 - blob) * W * 0.4} 0)`}
-          opacity={blob}
-        />
+        <path d={blobPath} fill={C.white} transform={`translate(${(1 - blob) * W * 0.45} 0)`} />
       </svg>
       <div
         style={{
           position: 'absolute',
-          ...(L ? { left: 150, top: 0, bottom: 0 } : { left: 0, right: 0, top: H * 0.13 }),
+          ...(L ? { left: W * 0.1, top: 0, bottom: 0 } : { left: 0, right: 0, top: H * 0.12 }),
           display: 'flex',
           alignItems: 'center',
           justifyContent: L ? 'flex-start' : 'center',
-          gap: (L ? 76 : 80) * 0.26,
-          opacity: 1 - out,
+          gap: 22,
         }}
       >
         {words.map((w, i) => {
-          const t = rise(f, 578 + i * 9, 14);
+          const t = rise(f, T.slideWords + i * 8, 14);
           return (
             <span
               key={i}
               style={{
                 fontFamily: FONT,
                 fontWeight: i >= 2 ? 700 : 400,
-                fontSize: L ? 76 : 80,
-                letterSpacing: -1.5,
+                fontSize: L ? 100 : 92,
+                letterSpacing: -2,
                 color: C.white,
                 opacity: t,
                 filter: `blur(${(1 - t) * 8}px)`,
+                display: 'inline-block',
+                transform: `scale(${0.9 + 0.1 * t})`,
               }}
             >
               {w}
@@ -519,9 +677,9 @@ function SlideBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
       <div
         style={{
           position: 'absolute',
-          ...(L ? { right: W * 0.08, top: H * 0.1 } : { right: W * 0.08, top: H * 0.34 }),
-          opacity: inP * (1 - out),
-          transform: `translateX(${(1 - inP) * W * 0.5}px) rotate(${(1 - inP) * 14 + 4}deg)`,
+          left: L ? W * 0.83 - pw / 2 : W * 0.66 - pw / 2,
+          top: L ? H * 0.08 : H * 0.36,
+          transform: `translate(${(1 - inP) * W * 0.5}px, ${Math.sin((f - T.slide) / 20) * 8}px) rotate(${(1 - inP) * 16 + 5 + Math.sin((f - T.slide) / 26)}deg)`,
         }}
       >
         <Phone src="checkin.png" width={pw} />
@@ -530,24 +688,74 @@ function SlideBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   );
 }
 
-/** "done" panel shrinks into the real Uma app icon, which then slides left for the end card. */
+/** "done" slides up, its panel shrinks into the real app icon, which moves aside for the end card. */
 function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   const f = useCurrentFrame();
-  if (f < 714) return null;
-  const s = L ? 230 : 260;
-  const shrink = lerp(f, [724, 752], [0, 1]);
-  const w = W + (s - W) * shrink;
-  const h = H + (s - H) * shrink;
-  const textOut = lerp(f, [724, 740], [0, 1], easeIn);
-  const textUp = lerp(f, [714, 721], [(L ? 260 : 220) * 0.9, 0], easeOut);
-  const icon = rise(f, 744, 12);
-  const slide = lerp(f, [764, 792], [0, 1]);
-  const cx = L ? W / 2 - slide * 300 : W / 2;
-  const cy = L ? H / 2 : H / 2 - slide * 260;
-  const end = rise(f, 778, 16);
+  if (f < T.done) return null;
+  const tile = L ? 320 : 330;
+  const textW = L ? 780 : 0;
+  const gap = 56;
+  const shrink = lerp(f, [T.shrink, T.shrink + 30], [0, 1]);
+  const toEnd = lerp(f, [T.toEnd, T.toEnd + 26], [0, 1]);
+  const w = W + (tile - W) * shrink;
+  const h = H + (tile - H) * shrink;
+  const endCx = L ? W / 2 - (tile + gap + textW) / 2 + tile / 2 : W / 2;
+  const endCy = L ? H / 2 : H * 0.36;
+  const cx = W / 2 + (endCx - W / 2) * toEnd;
+  const cy = H / 2 + (endCy - H / 2) * toEnd;
+  const fontSize = L ? 470 : 300;
+  const up = lerp(f, [T.done, T.done + 6], [fontSize * 1.1, 0], easeOut);
+  const upPrev = lerp(f - 1, [T.done, T.done + 6], [fontSize * 1.1, 0], easeOut);
+  const textOut = lerp(f, [T.shrink + 6, T.shrink + 22], [0, 1], easeIn);
+  const icon = lerp(f, [T.iconIn, T.iconIn + 14], [0, 1], easeOut);
+  const e1 = rise(f, T.endText, 16);
+  const e2 = rise(f, T.endText + 8, 16);
+  const e3 = rise(f, T.endText + 20, 14);
+  const word = (
+    <span
+      style={{
+        fontFamily: FONT,
+        fontWeight: 700,
+        fontSize: fontSize * (1 - shrink * 0.75),
+        letterSpacing: -fontSize * 0.045,
+        color: C.white,
+        opacity: 1 - textOut,
+        filter: textOut > 0 ? `blur(${textOut * 16}px)` : undefined,
+        transform: `translateY(${up}px)`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      done
+    </span>
+  );
   return (
     <AbsoluteFill style={{ background: shrink > 0 ? C.white : C.green }}>
-      <EndRibbons L={L} W={W} H={H} start={776} />
+      {f >= T.toEnd && (
+        <>
+          <Ribbon
+            d={
+              L
+                ? `M ${-0.05 * W} ${0.55 * H} C ${0.1 * W} ${0.6 * H}, ${0.16 * W} ${0.9 * H}, ${0.12 * W} ${1.12 * H}`
+                : `M ${-0.1 * W} ${0.78 * H} C ${0.2 * W} ${0.82 * H}, ${0.3 * W} ${0.95 * H}, ${0.25 * W} ${1.1 * H}`
+            }
+            start={T.toEnd + 6}
+            dur={30}
+            width={L ? 120 : 130}
+            color="rgba(22,146,63,0.12)"
+          />
+          <Ribbon
+            d={
+              L
+                ? `M ${0.82 * W} ${-0.12 * H} C ${0.8 * W} ${0.15 * H}, ${0.95 * W} ${0.26 * H}, ${1.12 * W} ${0.3 * H}`
+                : `M ${0.7 * W} ${-0.05 * H} C ${0.68 * W} ${0.12 * H}, ${0.9 * W} ${0.2 * H}, ${1.12 * W} ${0.22 * H}`
+            }
+            start={T.toEnd + 12}
+            dur={30}
+            width={L ? 120 : 130}
+            color="rgba(22,146,63,0.12)"
+          />
+        </>
+      )}
       <div
         style={{
           position: 'absolute',
@@ -555,65 +763,65 @@ function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
           top: cy - h / 2,
           width: w,
           height: h,
-          borderRadius: shrink * s * 0.22,
+          borderRadius: shrink * tile * 0.23,
           background: C.green,
           overflow: 'hidden',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: shrink > 0.9 ? '0 24px 60px rgba(22,146,63,0.25)' : 'none',
+          boxShadow: shrink > 0.9 ? '0 26px 60px rgba(22,146,63,0.28)' : 'none',
         }}
       >
-        <span
-          style={{
-            fontFamily: FONT,
-            fontWeight: 700,
-            fontSize: (L ? 260 : 220) * (1 - shrink * 0.6),
-            letterSpacing: -10,
-            color: C.white,
-            opacity: 1 - textOut,
-            filter: `blur(${textOut * 14}px)`,
-            transform: `translateY(${textUp}px)`,
-          }}
-        >
-          done
-        </span>
+        {Math.abs(up - upPrev) > 5 ? (
+          <Trail dy={up - upPrev}>
+            <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
+              {word}
+            </AbsoluteFill>
+          </Trail>
+        ) : (
+          word
+        )}
         <Img
           src={staticFile('brand/uma-app-icon.png')}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: icon }}
         />
       </div>
-      {/* End card text */}
       <div
         style={{
           position: 'absolute',
-          ...(L
-            ? { left: cx + s / 2 + 50, top: cy - 150, textAlign: 'left' as const }
-            : { left: 0, right: 0, top: cy + s / 2 + 50, textAlign: 'center' as const }),
           fontFamily: FONT,
+          ...(L
+            ? {
+                left: endCx + tile / 2 + gap,
+                top: H / 2 - 175,
+                width: textW,
+                textAlign: 'left' as const,
+              }
+            : { left: 0, right: 0, top: endCy + tile / 2 + 60, textAlign: 'center' as const }),
         }}
       >
         <div
           style={{
-            fontSize: L ? 64 : 66,
+            fontSize: L ? 80 : 78,
             fontWeight: 500,
             color: C.text,
             letterSpacing: -1.5,
-            opacity: end,
-            transform: `translateY(${(1 - end) * 24}px)`,
+            lineHeight: 1.1,
+            opacity: e1,
+            transform: `translateY(${(1 - e1) * 24}px)`,
           }}
         >
           Watch every plant.
         </div>
         <div
           style={{
-            fontSize: L ? 104 : 108,
+            fontSize: L ? 156 : 150,
             fontWeight: 700,
             color: C.green,
-            letterSpacing: -3,
+            letterSpacing: -4,
             lineHeight: 1,
-            opacity: rise(f, 786, 16),
-            transform: `translateY(${(1 - rise(f, 786, 16)) * 24}px)`,
+            opacity: e2,
+            transform: `translateY(${(1 - e2) * 24}px)`,
           }}
         >
           Lose less.
@@ -621,15 +829,16 @@ function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
         <div
           style={{
             display: 'inline-block',
-            marginTop: 22,
-            padding: '12px 30px',
+            marginTop: 24,
+            padding: '14px 34px',
             borderRadius: 999,
             background: C.green,
             color: C.white,
-            fontSize: L ? 30 : 32,
+            fontSize: L ? 36 : 38,
             fontWeight: 500,
-            opacity: rise(f, 798, 14),
-            transform: `scale(${0.8 + 0.2 * rise(f, 798, 14)})`,
+            opacity: e3,
+            transform: `scale(${0.85 + 0.15 * e3})`,
+            transformOrigin: L ? 'left center' : 'center',
           }}
         >
           Cebuano · English · Tagalog
@@ -639,73 +848,38 @@ function IconBeat({ L, W, H }: { L: boolean; W: number; H: number }) {
   );
 }
 
-/** Faint green ribbon strokes behind the end card (the reference's background curves). */
-function EndRibbons({ L, W, H, start }: { L: boolean; W: number; H: number; start: number }) {
-  const color = 'rgba(22,146,63,0.12)';
-  return (
-    <>
-      <Ribbon
-        d={
-          L
-            ? `M ${-0.05 * W} ${0.55 * H} C ${0.1 * W} ${0.6 * H}, ${0.15 * W} ${0.9 * H}, ${0.12 * W} ${1.1 * H}`
-            : `M ${-0.1 * W} ${0.75 * H} C ${0.2 * W} ${0.8 * H}, ${0.3 * W} ${0.95 * H}, ${0.25 * W} ${1.1 * H}`
-        }
-        start={start}
-        dur={30}
-        width={L ? 110 : 120}
-        color={color}
-      />
-      <Ribbon
-        d={
-          L
-            ? `M ${0.82 * W} ${-0.1 * H} C ${0.8 * W} ${0.15 * H}, ${0.95 * W} ${0.25 * H}, ${1.1 * W} ${0.3 * H}`
-            : `M ${0.7 * W} ${-0.05 * H} C ${0.68 * W} ${0.12 * H}, ${0.9 * W} ${0.2 * H}, ${1.1 * W} ${0.22 * H}`
-        }
-        start={start + 6}
-        dur={30}
-        width={L ? 110 : 120}
-        color={color}
-      />
-    </>
-  );
-}
-
 export function Explainer2({ layout }: { layout: Layout }) {
   const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const L = layout === 'landscape';
-  const big = L ? 300 : 230;
+  const big = L ? 620 : 330;
   return (
     <AbsoluteFill style={{ backgroundColor: C.white, overflow: 'hidden', fontFamily: FONT }}>
-      {/* 1. Word punches */}
-      <Punch text="plants" from={0} to={24} green size={big} />
-      <Punch text="drying" from={24} to={46} green={false} size={big} />
+      <Punch text="plants" from={T.plants} to={T.drying} green size={big} />
+      <Punch text="drying" from={T.drying} to={T.problem} green={false} size={big} />
       <Punch
         text={'plants drying out,\nbut too many zones'}
-        from={46}
-        to={82}
+        from={T.problem}
+        to={T.toCheck}
         green
-        size={L ? 96 : 84}
-        lines
+        size={L ? 132 : 104}
       />
-      {f >= 82 && f < 126 && (
+      {f < T.phoneSettled && (
         <Punch
           text="to check?"
-          from={82}
-          to={126}
+          from={T.toCheck}
+          to={T.phoneSettled}
           green={false}
-          size={L ? 190 : 150}
-          scaleTo={0.55}
+          size={L ? 300 : 190}
+          shrinkTo={0.45}
         />
       )}
-      {/* 2. Phone in 3D, 3. cards + ribbon + icon wipe, 4. fan of screens, 5. slide-in phone */}
       <PhoneBeat L={L} W={W} H={H} />
       <CardsBeat L={L} W={W} H={H} />
       <FanBeat L={L} W={W} H={H} />
       <SlideBeat L={L} W={W} H={H} />
-      {/* 6. Word punches, then "done" becomes the app icon, 7. end card */}
-      <Punch text="scan" from={668} to={690} green size={big} />
-      <Punch text="check" from={690} to={714} green={false} size={big} />
+      <Punch text="scan" from={T.scan} to={T.check} green size={big} />
+      <Punch text="check" from={T.check} to={T.done} green={false} size={big} />
       <IconBeat L={L} W={W} H={H} />
     </AbsoluteFill>
   );
